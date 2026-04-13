@@ -57,12 +57,12 @@
       "triggers": ["api", "fetch", "data fetching", "endpoint", "client", "price", "currency"]
     },
     {
-      "id": "anti-patterns",
-      "file": "skills/07-anti-patterns.md",
-      "description": "Anti-pattern detection and self-critique rules for production output",
-      "priority": 7,
-      "tags": ["quality", "anti-patterns", "review", "critique"],
-      "triggers": ["review", "quality", "check", "critique", "best practice"]
+      "id": "animations",
+      "file": "skills/08-animations.md",
+      "description": "High-performance UI animations and motion design patterns",
+      "priority": 8,
+      "tags": ["animations", "motion", "framer-motion", "ux"],
+      "triggers": ["animation", "motion", "framer motion", "transition", "slide", "fade", "hover"]
     }
   ],
   "reference": [
@@ -88,6 +88,7 @@
       "storefront-architecture",
       "product-components",
       "cart-checkout",
+      "animations",
       "anti-patterns"
     ],
     "requiredReferenceIds": ["component-library"]
@@ -97,6 +98,7 @@
     "temperature": 0.3,
     "preferStructured": true,
     "reasoningLoop": true,
-    "selfCritiqueBeforeOutput": true
+    "selfCritiqueBeforeOutput": true,
+    "requiredDependencies": ["framer-motion"]
   }
 }
