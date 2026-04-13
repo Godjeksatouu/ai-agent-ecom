@@ -1,39 +1,1836 @@
-# eCommerce Storefront — AI Agent Skills (VS Code / GitHub Copilot)
+# ecommerce-storefront — AI Agent Skills
+> Auto-generated 2026-04-13T04:30:42.823Z | v1.0.0
 
-You are an expert Next.js eCommerce developer. Follow these patterns exactly for all storefront code generation.
+You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience.
 
-## Identity
-- Senior eCommerce Engineer specializing in Next.js App Router
-- TypeScript always, `"use client"` only when necessary
-- Server Components first, accessibility (WCAG AA), no hardcoded values
+## storefront-architecture
+# Skill: eCommerce Storefront Architecture
 
-## Architecture
-- App Router with route groups: `(store)` and `(account)`
-- Parallel data fetching with `Promise.all()` always
-- ISR with `next: { tags: [...], revalidate: 60 }`
-- URL-driven state for filters/sort (nuqs library)
-- API layer in `lib/api/` with `react.cache()` deduplication
+## Role
+You are an expert Next.js eCommerce architect. When generating storefront code, always follow these patterns precisely.
 
-## Key Patterns
+---
 
-### Images
-Always use `next/image` with `sizes` attribute. Set `priority` only for above-fold images.
+## Project Structure (App Router — Next.js 14+)
 
-### Cart
-Zustand store, persist only `cartId` in localStorage. Optimistic updates with rollback.
+```
+storefront/
+├── app/
+│   ├── (store)/                    # Route group: storefront pages
+│   │   ├── layout.tsx              # Store shell: header, footer, cart drawer
+│   │   ├── page.tsx                # Homepage
+│   │   ├── products/
+│   │   │   ├── page.tsx            # Product listing
+│   │   │   └── [handle]/
+│   │   │       └── page.tsx        # Product detail (PDP)
+│   │   ├── collections/
+│   │   │   └── [handle]/
+│   │   │       └── page.tsx        # Collection page
+│   │   ├── cart/
+│   │   │   └── page.tsx            # Cart page
+│   │   └── checkout/
+│   │       ├── page.tsx            # Checkout start
+│   │       └── [step]/
+│   │           └── page.tsx        # Multi-step checkout
+│   ├── (account)/                  # Route group: customer account
+│   │   ├── layout.tsx
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   └── account/
+│   │       ├── page.tsx            # Account dashboard
+│   │       └── orders/[id]/page.tsx
+│   └── api/                        # API routes (BFF layer)
+│       ├── cart/route.ts
+│       └── checkout/route.ts
+├── components/
+│   ├── ui/                         # Primitive UI (Button, Input, Badge...)
+│   ├── product/                    # Product-domain components
+│   ├── cart/                       # Cart-domain components
+│   ├── checkout/                   # Checkout-domain components
+│   ├── layout/                     # Header, Footer, Nav
+│   └── common/                     # Breadcrumbs, Toasts, Modals
+├── lib/
+│   ├── api/                        # API client functions
+│   │   ├── products.ts
+│   │   ├── cart.ts
+│   │   └── customer.ts
+│   ├── hooks/                      # Custom React hooks
+│   ├── store/                      # Zustand global store
+│   └── utils/                      # Formatters, helpers
+├── types/                          # TypeScript type definitions
+├── styles/                         # Global CSS + design tokens
+└── public/                         # Static assets
+```
 
-### Auth
-HTTP-only cookies only. Protect routes with middleware. Never expose tokens to client.
+---
 
-### Payments
-Server-side via API routes. Create PaymentIntent server-side, return clientSecret to client.
+## Core Architecture Principles
 
-### SEO
-`generateMetadata()` on every page. JSON-LD on PDPs. `sitemap.ts` + `robots.ts` at app root.
+### 1. Server Components First (RSC)
+- Default to **React Server Components** for all pages and data-fetching components
+- Only use `"use client"` for:
+  - Interactive UI (cart drawer, modals, forms)
+  - Browser-only APIs (localStorage, window)
+  - State that must persist across navigation
+
+```tsx
+// ✅ CORRECT: Server Component (default)
+// app/(store)/products/page.tsx
+import { getProducts } from "@/lib/api/products"
+import { ProductGrid } from "@/components/product/ProductGrid"
+
+export default async function ProductsPage() {
+  const products = await getProducts({ limit: 24 })
+  return <ProductGrid products={products} />
+}
+
+// ✅ CORRECT: Client Component (only when needed)
+// components/cart/AddToCartButton.tsx
+"use client"
+import { useCart } from "@/lib/hooks/useCart"
+
+export function AddToCartButton({ variantId }: { variantId: string }) {
+  const { addItem } = useCart()
+  return <button onClick={() => addItem(variantId)}>Add to Cart</button>
+}
+```
+
+### 2. Data Fetching Pattern
+- Fetch data in **Server Components** at the page level
+- Pass data down as props — avoid prop drilling deeper than 2 levels (use composition)
+- Use **React cache()** to deduplicate identical fetches within a request
+
+```ts
+// lib/api/products.ts
+import { cache } from "react"
+
+export const getProduct = cache(async (handle: string) => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${handle}`, {
+    next: { tags: [`product-${handle}`] } // ISR cache tag
+  })
+  if (!res.ok) return null
+  return res.json() as Promise<Product>
+})
+```
+
+### 3. URL-Driven State
+- Filters, sort, pagination → **URL search params** (not component state)
+- Cart, user session → **Server-side cookies + Zustand hydration**
+- Use `nuqs` library for type-safe URL state management
+
+```tsx
+// ✅ URL-driven filters
+import { useQueryState } from "nuqs"
+
+export function SortSelector() {
+  const [sort, setSort] = useQueryState("sort", { defaultValue: "relevance" })
+  return <select value={sort} onChange={e => setSort(e.target.value)} />
+}
+```
+
+### 4. Error Boundaries & Suspense
+- Wrap every async page section in `<Suspense>` with a skeleton
+- Use `error.tsx` for per-route error boundaries
+
+```tsx
+// app/(store)/products/page.tsx
+import { Suspense } from "react"
+import { ProductGridSkeleton } from "@/components/product/ProductGridSkeleton"
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<ProductGridSkeleton />}>
+      <ProductsContent />
+    </Suspense>
+  )
+}
+```
+
+### 5. Type Safety Contract
+- Define all API response types in `/types/`
+- Never use `any` — use `unknown` + type guards
+
+```ts
+// types/product.ts
+export interface Product {
+  id: string
+  handle: string
+  title: string
+  description: string
+  thumbnail: string | null
+  variants: ProductVariant[]
+  collection: Collection | null
+  tags: string[]
+  metadata: Record<string, unknown>
+}
+
+export interface ProductVariant {
+  id: string
+  title: string
+  sku: string
+  price: Money
+  inventory_quantity: number
+  options: VariantOption[]
+}
+
+export interface Money {
+  amount: number
+  currency_code: string
+}
+```
+
+---
+
+## Routing Conventions
+
+| Route | Purpose | Data Source |
+|-------|---------|-------------|
+| `/` | Homepage (hero, featured, categories) | Static ISR + API |
+| `/products` | Product listing with filters | Dynamic SSR |
+| `/products/[handle]` | Product detail page | ISR (on-demand revalidation) |
+| `/collections/[handle]` | Collection/category page | ISR |
+| `/cart` | Cart review | Client-side (Zustand) |
+| `/checkout` | Multi-step checkout | Server-side session |
+| `/account` | Customer dashboard | SSR (auth-gated) |
+
+---
+
+## Environment Variables Pattern
+
+```env
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:9000   # Backend API base URL
+NEXT_PUBLIC_STORE_ID=default               # Store identifier
+API_SECRET_KEY=your_secret_key             # Server-only: backend auth
+NEXT_PUBLIC_STRIPE_KEY=pk_test_...         # Payment processor
+```
+
+**Rule**: Any variable used in Server Components only → no `NEXT_PUBLIC_` prefix (stays server-side).
+
+
+---
+
+## product-components
+# Skill: Product Components
+
+## Role
+You generate production-grade product UI components for Next.js eCommerce storefronts. Always implement TypeScript, accessibility (WCAG AA), and optimal image handling.
+
+---
+
+## Product Card Component
+
+The product card is the atomic unit of the storefront. It must be:
+- **Fast**: use `next/image` with proper `sizes`
+- **Accessible**: semantic HTML, alt text, keyboard navigable
+- **Flexible**: support grid and list layouts via props
+
+```tsx
+// components/product/ProductCard.tsx
+import Image from "next/image"
+import Link from "next/link"
+import { formatPrice } from "@/lib/utils/price"
+import { Badge } from "@/components/ui/Badge"
+import type { Product } from "@/types/product"
+
+interface ProductCardProps {
+  product: Product
+  layout?: "grid" | "list"
+  priority?: boolean  // Set true for above-the-fold cards
+}
+
+export function ProductCard({ product, layout = "grid", priority = false }: ProductCardProps) {
+  const primaryVariant = product.variants[0]
+  const isOnSale = primaryVariant?.compare_at_price != null &&
+    primaryVariant.compare_at_price > primaryVariant.price.amount
+  const isOutOfStock = product.variants.every(v => v.inventory_quantity === 0)
+
+  return (
+    <article
+      className={`product-card product-card--${layout}`}
+      aria-label={product.title}
+    >
+      <Link href={`/products/${product.handle}`} className="product-card__image-link">
+        <div className="product-card__image-wrapper">
+          {product.thumbnail ? (
+            <Image
+              src={product.thumbnail}
+              alt={product.title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="product-card__image"
+              priority={priority}
+            />
+          ) : (
+            <div className="product-card__image-placeholder" aria-hidden="true" />
+          )}
+
+          {isOutOfStock && (
+            <Badge variant="secondary" className="product-card__badge">
+              Out of Stock
+            </Badge>
+          )}
+          {isOnSale && !isOutOfStock && (
+            <Badge variant="sale" className="product-card__badge">
+              Sale
+            </Badge>
+          )}
+        </div>
+      </Link>
+
+      <div className="product-card__info">
+        <Link href={`/products/${product.handle}`} className="product-card__title-link">
+          <h3 className="product-card__title">{product.title}</h3>
+        </Link>
+
+        {product.collection && (
+          <p className="product-card__collection">{product.collection.title}</p>
+        )}
+
+        <div className="product-card__pricing">
+          <span className="product-card__price">
+            {formatPrice(primaryVariant?.price)}
+          </span>
+          {isOnSale && (
+            <span className="product-card__compare-price" aria-label="Original price">
+              {formatPrice({ amount: primaryVariant.compare_at_price!, currency_code: primaryVariant.price.currency_code })}
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
+```
+
+---
+
+## Product Grid
+
+```tsx
+// components/product/ProductGrid.tsx
+import { ProductCard } from "./ProductCard"
+import type { Product } from "@/types/product"
+
+interface ProductGridProps {
+  products: Product[]
+  columns?: 2 | 3 | 4
+}
+
+export function ProductGrid({ products, columns = 4 }: ProductGridProps) {
+  if (products.length === 0) {
+    return (
+      <div className="product-grid__empty" role="status">
+        <p>No products found.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`product-grid product-grid--${columns}col`}
+      role="list"
+      aria-label="Products"
+    >
+      {products.map((product, index) => (
+        <div key={product.id} role="listitem">
+          <ProductCard
+            product={product}
+            priority={index < 4}  // Prioritize LCP candidates
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+---
+
+## Product Detail Page (PDP)
+
+```tsx
+// app/(store)/products/[handle]/page.tsx
+import { notFound } from "next/navigation"
+import { getProduct, getProducts } from "@/lib/api/products"
+import { ProductGallery } from "@/components/product/ProductGallery"
+import { ProductInfo } from "@/components/product/ProductInfo"
+import { RelatedProducts } from "@/components/product/RelatedProducts"
+import { Suspense } from "react"
+
+interface Props {
+  params: { handle: string }
+}
+
+// ISR: revalidate every 60s, invalidate on-demand via API route
+export const revalidate = 60
+
+export async function generateStaticParams() {
+  const products = await getProducts({ limit: 100 })
+  return products.map(p => ({ handle: p.handle }))
+}
+
+export async function generateMetadata({ params }: Props) {
+  const product = await getProduct(params.handle)
+  if (!product) return {}
+  return {
+    title: `${product.title} | My Store`,
+    description: product.description?.slice(0, 160),
+    openGraph: {
+      title: product.title,
+      images: product.thumbnail ? [{ url: product.thumbnail }] : [],
+    }
+  }
+}
+
+export default async function ProductPage({ params }: Props) {
+  const product = await getProduct(params.handle)
+  if (!product) notFound()
+
+  return (
+    <main className="pdp">
+      <div className="pdp__layout">
+        {/* Gallery: left column */}
+        <ProductGallery images={product.images} title={product.title} />
+
+        {/* Info: right column */}
+        <ProductInfo product={product} />
+      </div>
+
+      {/* Related products */}
+      <Suspense fallback={<div className="skeleton-row" />}>
+        <RelatedProducts
+          collectionId={product.collection?.id}
+          excludeId={product.id}
+        />
+      </Suspense>
+    </main>
+  )
+}
+```
+
+---
+
+## ProductInfo — Variant Selection + Add to Cart
+
+```tsx
+// components/product/ProductInfo.tsx
+"use client"
+import { useState, useMemo } from "react"
+import { useCart } from "@/lib/hooks/useCart"
+import { formatPrice } from "@/lib/utils/price"
+import { Button } from "@/components/ui/Button"
+import type { Product, ProductVariant } from "@/types/product"
+
+interface ProductInfoProps {
+  product: Product
+}
+
+export function ProductInfo({ product }: ProductInfoProps) {
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [isAdding, setIsAdding] = useState(false)
+  const { addItem } = useCart()
+
+  // Derive selected variant from options
+  const selectedVariant = useMemo<ProductVariant | undefined>(() => {
+    return product.variants.find(variant =>
+      variant.options.every(
+        opt => selectedOptions[opt.option_id] === opt.value
+      )
+    )
+  }, [product.variants, selectedOptions])
+
+  const isAvailable = selectedVariant
+    ? selectedVariant.inventory_quantity > 0
+    : false
+
+  const handleAddToCart = async () => {
+    if (!selectedVariant) return
+    setIsAdding(true)
+    try {
+      await addItem({ variantId: selectedVariant.id, quantity: 1 })
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  return (
+    <section className="product-info" aria-label="Product details">
+      <h1 className="product-info__title">{product.title}</h1>
+
+      <div className="product-info__price">
+        {formatPrice(selectedVariant?.price ?? product.variants[0]?.price)}
+      </div>
+
+      {/* Option selectors */}
+      {product.options?.map(option => (
+        <div key={option.id} className="product-info__option">
+          <label className="product-info__option-label">
+            {option.title}
+          </label>
+          <div className="product-info__option-values" role="group" aria-label={option.title}>
+            {option.values.map(value => (
+              <button
+                key={value.id}
+                className={`option-btn ${selectedOptions[option.id] === value.value ? "option-btn--selected" : ""}`}
+                onClick={() => setSelectedOptions(prev => ({ ...prev, [option.id]: value.value }))}
+                aria-pressed={selectedOptions[option.id] === value.value}
+              >
+                {value.value}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <Button
+        className="product-info__add-to-cart"
+        onClick={handleAddToCart}
+        disabled={!isAvailable || isAdding}
+        aria-label={isAdding ? "Adding to cart…" : "Add to cart"}
+      >
+        {isAdding ? "Adding…" : isAvailable ? "Add to Cart" : "Out of Stock"}
+      </Button>
+
+      {product.description && (
+        <div
+          className="product-info__description"
+          dangerouslySetInnerHTML={{ __html: product.description }}
+        />
+      )}
+    </section>
+  )
+}
+```
+
+---
+
+## Product Gallery
+
+```tsx
+// components/product/ProductGallery.tsx
+"use client"
+import { useState } from "react"
+import Image from "next/image"
+
+interface GalleryImage { url: string; alt?: string }
+
+export function ProductGallery({ images, title }: { images: GalleryImage[], title: string }) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const selected = images[selectedIndex]
+
+  return (
+    <div className="product-gallery">
+      <div className="product-gallery__main" aria-live="polite">
+        {selected && (
+          <Image
+            src={selected.url}
+            alt={selected.alt ?? title}
+            fill
+            className="product-gallery__main-img"
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        )}
+      </div>
+
+      {images.length > 1 && (
+        <div className="product-gallery__thumbnails" role="tablist" aria-label="Product images">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={i === selectedIndex}
+              aria-label={`View image ${i + 1}`}
+              className={`product-gallery__thumb ${i === selectedIndex ? "product-gallery__thumb--active" : ""}`}
+              onClick={() => setSelectedIndex(i)}
+            >
+              <Image src={img.url} alt="" fill sizes="80px" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+## Anti-Patterns to Avoid
+
+❌ **Never use `<img>` directly** — always `next/image` for optimization  
+❌ **Never fetch data inside client components** — use RSC or SWR/React Query  
+❌ **Never hardcode currency** — use `Intl.NumberFormat` or `formatPrice()` util  
+❌ **Never skip `alt` text** — all images need meaningful alt or `alt=""`  
+❌ **Never use `any` types** — use proper type definitions  
+
+
+---
+
+## cart-checkout
+# Skill: Cart & Checkout
+
+## Role
+You implement production-grade cart and checkout systems for Next.js storefronts. The cart is managed client-side with Zustand + server-side persistence via the API. Checkout uses a step-based flow with server-side session management.
+
+---
+
+## Cart Architecture
+
+```
+Cart State Flow:
+Browser (Zustand) ←→ API (Backend) ←→ Database
+      ↓
+  localStorage (cart_id only — not items)
+```
+
+**Rules:**
+- Store only `cart_id` in localStorage — never full cart data
+- Always sync with backend on mount via `useCart` hook
+- Optimistic updates: update UI instantly, revert on API failure
+- Cart is server-side authoritative (price, inventory checked server-side)
+
+---
+
+## Zustand Cart Store
+
+```ts
+// lib/store/cart.store.ts
+import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
+import { getCart, createCart, addLineItem, removeLineItem, updateLineItem } from "@/lib/api/cart"
+import type { Cart, LineItem } from "@/types/cart"
+
+interface CartStore {
+  cart: Cart | null
+  cartId: string | null
+  isOpen: boolean
+  isLoading: boolean
+
+  // Actions
+  initCart: () => Promise<void>
+  addItem: (params: { variantId: string; quantity: number }) => Promise<void>
+  removeItem: (lineItemId: string) => Promise<void>
+  updateItem: (lineItemId: string, quantity: number) => Promise<void>
+  clearCart: () => void
+  openCart: () => void
+  closeCart: () => void
+}
+
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
+      cart: null,
+      cartId: null,
+      isOpen: false,
+      isLoading: false,
+
+      initCart: async () => {
+        const { cartId } = get()
+        set({ isLoading: true })
+        try {
+          if (cartId) {
+            const cart = await getCart(cartId)
+            if (cart) {
+              set({ cart, isLoading: false })
+              return
+            }
+          }
+          // Create new cart if none exists or existing is expired
+          const newCart = await createCart()
+          set({ cart: newCart, cartId: newCart.id, isLoading: false })
+        } catch (err) {
+          console.error("Failed to initialize cart:", err)
+          set({ isLoading: false })
+        }
+      },
+
+      addItem: async ({ variantId, quantity }) => {
+        const { cartId, initCart } = get()
+        if (!cartId) await initCart()
+
+        const currentCartId = get().cartId!
+        set({ isLoading: true })
+
+        // Optimistic update
+        const previousCart = get().cart
+
+        try {
+          const updatedCart = await addLineItem(currentCartId, { variantId, quantity })
+          set({ cart: updatedCart, isOpen: true, isLoading: false })
+        } catch (err) {
+          // Revert optimistic update
+          set({ cart: previousCart, isLoading: false })
+          throw err
+        }
+      },
+
+      removeItem: async (lineItemId) => {
+        const { cartId } = get()
+        if (!cartId) return
+        set({ isLoading: true })
+        try {
+          const updatedCart = await removeLineItem(cartId, lineItemId)
+          set({ cart: updatedCart, isLoading: false })
+        } catch (err) {
+          set({ isLoading: false })
+          throw err
+        }
+      },
+
+      updateItem: async (lineItemId, quantity) => {
+        const { cartId } = get()
+        if (!cartId) return
+        set({ isLoading: true })
+        try {
+          const updatedCart = await updateLineItem(cartId, lineItemId, { quantity })
+          set({ cart: updatedCart, isLoading: false })
+        } catch (err) {
+          set({ isLoading: false })
+          throw err
+        }
+      },
+
+      clearCart: () => set({ cart: null, cartId: null }),
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+    }),
+    {
+      name: "cart-storage",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ cartId: state.cartId }), // Only persist cartId
+    }
+  )
+)
+```
+
+---
+
+## useCart Hook (Public API)
+
+```ts
+// lib/hooks/useCart.ts
+import { useEffect } from "react"
+import { useCartStore } from "@/lib/store/cart.store"
+
+export function useCart() {
+  const store = useCartStore()
+
+  useEffect(() => {
+    store.initCart()
+  }, [])
+
+  return {
+    cart: store.cart,
+    cartId: store.cartId,
+    isOpen: store.isOpen,
+    isLoading: store.isLoading,
+    itemCount: store.cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+    total: store.cart?.total ?? 0,
+    addItem: store.addItem,
+    removeItem: store.removeItem,
+    updateItem: store.updateItem,
+    openCart: store.openCart,
+    closeCart: store.closeCart,
+  }
+}
+```
+
+---
+
+## Cart Drawer Component
+
+```tsx
+// components/cart/CartDrawer.tsx
+"use client"
+import { useCart } from "@/lib/hooks/useCart"
+import { CartLineItem } from "./CartLineItem"
+import { Button } from "@/components/ui/Button"
+import { formatPrice } from "@/lib/utils/price"
+import { useRouter } from "next/navigation"
+
+export function CartDrawer() {
+  const { cart, isOpen, closeCart, itemCount, isLoading } = useCart()
+  const router = useRouter()
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="cart-drawer__backdrop"
+          onClick={closeCart}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer */}
+      <aside
+        className={`cart-drawer ${isOpen ? "cart-drawer--open" : ""}`}
+        aria-label="Shopping cart"
+        aria-modal="true"
+        role="dialog"
+      >
+        <header className="cart-drawer__header">
+          <h2>Cart ({itemCount})</h2>
+          <button
+            onClick={closeCart}
+            aria-label="Close cart"
+            className="cart-drawer__close"
+          >
+            ×
+          </button>
+        </header>
+
+        {isLoading ? (
+          <div className="cart-drawer__loading" aria-live="polite">Loading…</div>
+        ) : cart?.items.length === 0 || !cart ? (
+          <div className="cart-drawer__empty">
+            <p>Your cart is empty.</p>
+            <Button variant="outline" onClick={closeCart}>Continue Shopping</Button>
+          </div>
+        ) : (
+          <>
+            <ul className="cart-drawer__items" aria-label="Cart items">
+              {cart.items.map(item => (
+                <li key={item.id}>
+                  <CartLineItem item={item} />
+                </li>
+              ))}
+            </ul>
+
+            <footer className="cart-drawer__footer">
+              <div className="cart-drawer__subtotal">
+                <span>Subtotal</span>
+                <span>{formatPrice({ amount: cart.subtotal, currency_code: cart.currency_code })}</span>
+              </div>
+              <p className="cart-drawer__shipping-note">Shipping & taxes calculated at checkout</p>
+              <Button
+                className="cart-drawer__checkout-btn"
+                onClick={() => {
+                  closeCart()
+                  router.push("/checkout")
+                }}
+              >
+                Proceed to Checkout
+              </Button>
+            </footer>
+          </>
+        )}
+      </aside>
+    </>
+  )
+}
+```
+
+---
+
+## Checkout Flow Architecture
+
+```
+/checkout
+  ├── /information   → Shipping address
+  ├── /delivery      → Shipping method selection
+  ├── /payment       → Payment method + card
+  └── /confirmation  → Order confirmed
+```
+
+**Key Rules:**
+- Each step validates before proceeding
+- State lives in server session (cookie) — not URL
+- Payment is processed server-side via API route
+- Never expose payment keys to the client
+
+```tsx
+// app/(store)/checkout/[step]/page.tsx
+import { redirect } from "next/navigation"
+import { getCheckoutSession } from "@/lib/api/checkout"
+import { CheckoutProgress } from "@/components/checkout/CheckoutProgress"
+import { InformationStep } from "@/components/checkout/InformationStep"
+import { DeliveryStep } from "@/components/checkout/DeliveryStep"
+import { PaymentStep } from "@/components/checkout/PaymentStep"
+
+const STEPS = ["information", "delivery", "payment", "confirmation"] as const
+type CheckoutStep = typeof STEPS[number]
+
+export default async function CheckoutStepPage({ params }: { params: { step: CheckoutStep } }) {
+  const session = await getCheckoutSession()
+  if (!session?.cartId) redirect("/cart")
+
+  const stepComponents: Record<CheckoutStep, React.ReactNode> = {
+    information: <InformationStep cart={session.cart} />,
+    delivery: <DeliveryStep cart={session.cart} />,
+    payment: <PaymentStep cart={session.cart} />,
+    confirmation: <div>Order confirmed!</div>,
+  }
+
+  return (
+    <div className="checkout">
+      <CheckoutProgress currentStep={params.step} steps={STEPS} />
+      <div className="checkout__content">
+        {stepComponents[params.step] ?? redirect("/checkout/information")}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Payment Integration (Server-Side)
+
+```ts
+// app/api/checkout/payment/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import Stripe from "stripe"
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-12-18.acacia" })
+
+export async function POST(req: NextRequest) {
+  const { cartId } = await req.json()
+
+  try {
+    // Get cart from backend
+    const cart = await fetchCart(cartId) // your backend call
+
+    // Create Stripe PaymentIntent server-side
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: cart.total,
+      currency: cart.currency_code,
+      automatic_payment_methods: { enabled: true },
+      metadata: { cart_id: cartId },
+    })
+
+    return NextResponse.json({ clientSecret: paymentIntent.client_secret })
+  } catch (err) {
+    return NextResponse.json({ error: "Payment initialization failed" }, { status: 500 })
+  }
+}
+```
+
+---
 
 ## Anti-Patterns
-- Never `<img>` → use `next/image`
-- Never `localStorage` for auth → HTTP-only cookies
-- Never client-side payment processing → API route
-- Never `any` TypeScript → proper interfaces
-- Never sequential awaits when parallel is possible
+
+❌ Don't store cart items in localStorage — only the ID  
+❌ Don't process payments client-side — always via API route  
+❌ Don't trust client-side prices — validate totals server-side  
+❌ Don't skip loading states — always show feedback during async ops  
+❌ Don't handle payment errors silently — surface them to the user  
+
+
+---
+
+## performance-seo
+# Skill: Performance & SEO
+
+## Role
+You optimize Next.js eCommerce storefronts for Core Web Vitals, search engine indexing, and rich search results. These patterns are non-negotiable for production eCommerce.
+
+---
+
+## Core Web Vitals Targets
+
+| Metric | Target | Strategy |
+|--------|--------|----------|
+| **LCP** (Largest Contentful Paint) | < 2.5s | Priority images, fast TTF |
+| **FID/INP** (Interaction to Next Paint) | < 200ms | Minimal JS, code splitting |
+| **CLS** (Cumulative Layout Shift) | < 0.1 | Reserve image space, no layout shifts |
+| **TTFB** (Time to First Byte) | < 800ms | Edge caching, ISR |
+
+---
+
+## Image Optimization
+
+```tsx
+// ✅ CORRECT: Above-the-fold hero image
+<Image
+  src={heroImage.url}
+  alt={heroImage.alt}
+  fill
+  priority          // Preload LCP candidate
+  fetchPriority="high"
+  sizes="100vw"
+  quality={85}      // Balanced quality/size
+/>
+
+// ✅ CORRECT: Product grid images (below fold)
+<Image
+  src={product.thumbnail}
+  alt={product.title}
+  fill
+  loading="lazy"    // Default, explicit for clarity
+  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+  quality={80}
+/>
+
+// ❌ WRONG: No sizes attribute
+<Image src={img} alt="..." fill />
+
+// ❌ WRONG: Using <img> tag
+<img src={img} alt="..." />
+```
+
+**Image Rules:**
+- Use `sizes` on every `fill` image to prevent oversized downloads
+- Set `priority` only on the 1-3 images above the fold (usually hero + first product card)
+- Never use `quality={100}` — 80-85 is visually identical in products
+
+---
+
+## Caching Strategy
+
+```ts
+// Static pages: generated at build, revalidated periodically
+export const revalidate = 3600 // 1 hour ISR
+
+// Dynamic pages: always fresh
+export const dynamic = "force-dynamic"
+
+// Fetch with cache tags (for on-demand purge)
+const product = await fetch(`${API}/products/${handle}`, {
+  next: {
+    revalidate: 60,
+    tags: [`product-${handle}`, "products"]
+  }
+})
+
+// On-demand revalidation (webhook from CMS/backend)
+// app/api/revalidate/route.ts
+import { revalidateTag } from "next/cache"
+
+export async function POST(req: NextRequest) {
+  const { tag, secret } = await req.json()
+  if (secret !== process.env.REVALIDATION_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  revalidateTag(tag)
+  return NextResponse.json({ revalidated: true })
+}
+```
+
+---
+
+## SEO: Metadata API
+
+```ts
+// app/(store)/products/[handle]/page.tsx
+import type { Metadata } from "next"
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const product = await getProduct(params.handle)
+  if (!product) return { title: "Product Not Found" }
+
+  const description = product.description?.replace(/<[^>]+>/g, "").slice(0, 160) ?? ""
+
+  return {
+    title: {
+      absolute: `${product.title} | My Store`  // Overrides template
+    },
+    description,
+    keywords: product.tags?.join(", "),
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/products/${product.handle}`
+    },
+    openGraph: {
+      type: "website",
+      title: product.title,
+      description,
+      images: product.images?.map(img => ({
+        url: img.url,
+        width: 1200,
+        height: 630,
+        alt: product.title
+      })) ?? []
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.title,
+      description,
+      images: [product.thumbnail ?? ""],
+    }
+  }
+}
+```
+
+---
+
+## Structured Data (JSON-LD)
+
+Add rich snippets for better search appearance (product ratings, price, availability).
+
+```tsx
+// components/product/ProductStructuredData.tsx
+import type { Product } from "@/types/product"
+
+export function ProductStructuredData({ product }: { product: Product }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description?.replace(/<[^>]+>/g, ""),
+    image: product.images?.map(img => img.url) ?? [],
+    sku: product.variants[0]?.sku,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: product.variants[0]?.price.currency_code,
+      lowPrice: Math.min(...product.variants.map(v => v.price.amount)) / 100,
+      highPrice: Math.max(...product.variants.map(v => v.price.amount)) / 100,
+      availability: product.variants.some(v => v.inventory_quantity > 0)
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "My Store"
+      }
+    }
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+// Usage in PDP:
+// <ProductStructuredData product={product} />
+```
+
+---
+
+## Sitemap
+
+```ts
+// app/sitemap.ts
+import type { MetadataRoute } from "next"
+import { getProducts } from "@/lib/api/products"
+import { getCollections } from "@/lib/api/collections"
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL!
+  const [products, collections] = await Promise.all([
+    getProducts({ limit: 1000 }),
+    getCollections({ limit: 100 })
+  ])
+
+  const productUrls = products.map(p => ({
+    url: `${baseUrl}/products/${p.handle}`,
+    lastModified: new Date(p.updated_at),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }))
+
+  const collectionUrls = collections.map(c => ({
+    url: `${baseUrl}/collections/${c.handle}`,
+    lastModified: new Date(c.updated_at),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }))
+
+  return [
+    { url: baseUrl, changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/products`, changeFrequency: "daily", priority: 0.9 },
+    ...productUrls,
+    ...collectionUrls,
+  ]
+}
+```
+
+---
+
+## Performance: Code Splitting
+
+```ts
+// ✅ Dynamic imports for heavy components
+import dynamic from "next/dynamic"
+
+// Heavy: only load when needed
+const FullPageSearch = dynamic(() => import("@/components/search/FullPageSearch"), {
+  ssr: false,  // Client-only (uses browser APIs)
+  loading: () => <SearchSkeleton />,
+})
+
+// Conditional: only load if user opens it
+const ReviewModal = dynamic(() => import("@/components/product/ReviewModal"), {
+  loading: () => null,
+})
+
+// Map/ Third-party: large libraries
+const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false })
+```
+
+---
+
+## Robots.txt
+
+```ts
+// app/robots.ts
+import type { MetadataRoute } from "next"
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/account/", "/checkout/", "/api/"],
+      }
+    ],
+    sitemap: `${process.env.NEXT_PUBLIC_SITE_URL}/sitemap.xml`,
+  }
+}
+```
+
+---
+
+## Font Optimization
+
+```tsx
+// app/layout.tsx
+import { Inter } from "next/font/google"
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",        // CLS prevention
+  preload: true,
+  variable: "--font-sans"
+})
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={inter.variable}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+
+---
+
+## auth-accounts
+# Skill: Authentication & Customer Accounts
+
+## Role
+You implement secure, production-grade customer authentication and account management for Next.js eCommerce storefronts. Auth is session-based (HTTP-only cookies) — never JWT in localStorage.
+
+---
+
+## Auth Architecture
+
+```
+Auth Flow:
+1. Customer submits login form (client-side)
+2. POST to Next.js API route (/api/auth/login)
+3. API route calls backend, gets session token
+4. API route sets HTTP-only cookie
+5. All subsequent requests include cookie automatically
+6. Middleware protects /account/* routes
+```
+
+**Security Rules:**
+- Store auth tokens in **HTTP-only cookies only** — never localStorage or sessionStorage
+- Use **Secure** and **SameSite=Strict** cookie flags in production
+- Validate sessions server-side on every protected page
+- Rate-limit auth endpoints
+
+---
+
+## Next.js Auth Middleware
+
+```ts
+// middleware.ts
+import { NextRequest, NextResponse } from "next/server"
+
+const PROTECTED_PATHS = ["/account", "/account/orders", "/account/profile"]
+const AUTH_PATHS = ["/login", "/register"]
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  const sessionToken = req.cookies.get("_session_token")?.value
+
+  const isProtected = PROTECTED_PATHS.some(p => pathname.startsWith(p))
+  const isAuthPage = AUTH_PATHS.some(p => pathname.startsWith(p))
+
+  // Redirect unauthenticated users to login
+  if (isProtected && !sessionToken) {
+    const loginUrl = req.nextUrl.clone()
+    loginUrl.pathname = "/login"
+    loginUrl.searchParams.set("redirect", pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthPage && sessionToken) {
+    return NextResponse.redirect(new URL("/account", req.url))
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ["/account/:path*", "/login", "/register"]
+}
+```
+
+---
+
+## Login API Route
+
+```ts
+// app/api/auth/login/route.ts
+import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+})
+
+export async function POST(req: NextRequest) {
+  const body = await req.json()
+  const parsed = loginSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 })
+  }
+
+  try {
+    // Call backend auth
+    const backendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/customers/auth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed.data),
+    })
+
+    if (!backendRes.ok) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
+
+    const { customer, token } = await backendRes.json()
+
+    const response = NextResponse.json({ customer })
+    response.cookies.set({
+      name: "_session_token",
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    })
+
+    return response
+  } catch {
+    return NextResponse.json({ error: "Authentication failed" }, { status: 500 })
+  }
+}
+```
+
+---
+
+## Customer Session Hook
+
+```ts
+// lib/hooks/useCustomer.ts
+import { useEffect, useState } from "react"
+
+interface Customer {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+}
+
+interface UseCustomerReturn {
+  customer: Customer | null
+  isLoading: boolean
+  isAuthenticated: boolean
+  logout: () => Promise<void>
+}
+
+export function useCustomer(): UseCustomerReturn {
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        setCustomer(data?.customer ?? null)
+        setIsLoading(false)
+      })
+      .catch(() => setIsLoading(false))
+  }, [])
+
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    setCustomer(null)
+    window.location.href = "/"
+  }
+
+  return {
+    customer,
+    isLoading,
+    isAuthenticated: !!customer,
+    logout,
+  }
+}
+```
+
+---
+
+## Login Form Component
+
+```tsx
+// components/account/LoginForm.tsx
+"use client"
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+
+export function LoginForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get("redirect") ?? "/account"
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setIsLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error ?? "Login failed. Please try again.")
+        return
+      }
+
+      router.push(redirect)
+      router.refresh()
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+      <h1 className="auth-form__title">Sign In</h1>
+
+      {error && (
+        <div className="auth-form__error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div className="auth-form__fields">
+        <Input
+          type="email"
+          name="email"
+          label="Email address"
+          placeholder="you@example.com"
+          autoComplete="email"
+          required
+        />
+        <Input
+          type="password"
+          name="password"
+          label="Password"
+          placeholder="••••••••"
+          autoComplete="current-password"
+          required
+        />
+      </div>
+
+      <Button type="submit" disabled={isLoading} className="auth-form__submit">
+        {isLoading ? "Signing in…" : "Sign In"}
+      </Button>
+
+      <p className="auth-form__footer">
+        Don't have an account?{" "}
+        <a href="/register">Create one</a>
+      </p>
+    </form>
+  )
+}
+```
+
+---
+
+## Account Dashboard Page
+
+```tsx
+// app/(account)/account/page.tsx
+import { redirect } from "next/navigation"
+import { getCustomerFromSession } from "@/lib/api/customer"
+import { getCustomerOrders } from "@/lib/api/orders"
+
+export default async function AccountPage() {
+  const customer = await getCustomerFromSession()
+  if (!customer) redirect("/login")
+
+  const orders = await getCustomerOrders(customer.id)
+
+  return (
+    <main className="account-dashboard">
+      <h1>Welcome, {customer.first_name}</h1>
+
+      <section className="account-section">
+        <h2>Recent Orders</h2>
+        {orders.length === 0 ? (
+          <p>No orders yet. <a href="/products">Start shopping</a></p>
+        ) : (
+          <ul className="order-list">
+            {orders.slice(0, 5).map(order => (
+              <li key={order.id} className="order-list__item">
+                <a href={`/account/orders/${order.id}`}>
+                  <span>#{order.display_id}</span>
+                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                  <span>{order.status}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
+  )
+}
+```
+
+---
+
+## Anti-Patterns
+
+❌ Never store JWT in localStorage — XSS vulnerable  
+❌ Never skip rate limiting on auth routes  
+❌ Never expose backend tokens in client responses  
+❌ Never use `dangerouslySetInnerHTML` with user content  
+❌ Never redirect with sensitive data in query params  
+
+
+---
+
+## api-integration
+# Skill: API Integration
+
+## Role
+You implement robust, type-safe API integration layers for Next.js eCommerce storefronts. The API layer abstracts backend communication and handles errors consistently.
+
+---
+
+## API Client Architecture
+
+```
+Storefront → lib/api/ → Backend API (Medusa / Custom)
+                ↓
+         Type-safe functions
+         Error handling
+         Auth headers
+         Cache control
+```
+
+---
+
+## Base API Client
+
+```ts
+// lib/api/client.ts
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:9000"
+
+interface RequestOptions extends RequestInit {
+  tags?: string[]
+  revalidate?: number | false
+}
+
+export class APIError extends Error {
+  constructor(
+    public status: number,
+    public message: string,
+    public code?: string
+  ) {
+    super(message)
+    this.name = "APIError"
+  }
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const { tags, revalidate, ...fetchOptions } = options
+
+  const headers = new Headers(fetchOptions.headers)
+  headers.set("Content-Type", "application/json")
+
+  // Add auth cookie passthrough for server components
+  if (typeof window === "undefined") {
+    const { cookies } = await import("next/headers")
+    const cookieStore = cookies()
+    const token = cookieStore.get("_session_token")?.value
+    if (token) headers.set("Authorization", `Bearer ${token}`)
+  }
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...fetchOptions,
+    headers,
+    next: {
+      ...(tags && { tags }),
+      ...(revalidate !== undefined && { revalidate }),
+    },
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new APIError(res.status, body.message ?? res.statusText, body.code)
+  }
+
+  return res.json() as Promise<T>
+}
+```
+
+---
+
+## Products API
+
+```ts
+// lib/api/products.ts
+import { cache } from "react"
+import { apiRequest } from "./client"
+import type { Product } from "@/types/product"
+
+interface ProductListParams {
+  limit?: number
+  offset?: number
+  collection_id?: string[]
+  tags?: string[]
+  sort?: string
+  q?: string
+}
+
+interface ProductListResponse {
+  products: Product[]
+  count: number
+  offset: number
+  limit: number
+}
+
+export const getProducts = cache(async (params: ProductListParams = {}): Promise<Product[]> => {
+  const query = new URLSearchParams()
+  if (params.limit) query.set("limit", String(params.limit))
+  if (params.offset) query.set("offset", String(params.offset))
+  if (params.q) query.set("q", params.q)
+  if (params.sort) query.set("order", params.sort)
+  if (params.collection_id?.length) {
+    params.collection_id.forEach(id => query.append("collection_id[]", id))
+  }
+
+  const { products } = await apiRequest<ProductListResponse>(
+    `/store/products?${query.toString()}`,
+    { tags: ["products"], revalidate: 60 }
+  )
+  return products
+})
+
+export const getProduct = cache(async (handle: string): Promise<Product | null> => {
+  try {
+    const { product } = await apiRequest<{ product: Product }>(
+      `/store/products?handle=${handle}`,
+      { tags: [`product-${handle}`, "products"], revalidate: 60 }
+    ).then(res => ({ product: (res as { products: Product[] }).products[0] ?? null }))
+    return product
+  } catch {
+    return null
+  }
+})
+```
+
+---
+
+## Cart API
+
+```ts
+// lib/api/cart.ts
+import { apiRequest } from "./client"
+import type { Cart } from "@/types/cart"
+
+export async function createCart(): Promise<Cart> {
+  const { cart } = await apiRequest<{ cart: Cart }>("/store/carts", {
+    method: "POST",
+    body: JSON.stringify({}),
+  })
+  return cart
+}
+
+export async function getCart(cartId: string): Promise<Cart | null> {
+  try {
+    const { cart } = await apiRequest<{ cart: Cart }>(`/store/carts/${cartId}`, {
+      cache: "no-store", // Always fresh
+    })
+    return cart
+  } catch {
+    return null
+  }
+}
+
+export async function addLineItem(
+  cartId: string,
+  params: { variantId: string; quantity: number }
+): Promise<Cart> {
+  const { cart } = await apiRequest<{ cart: Cart }>(
+    `/store/carts/${cartId}/line-items`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        variant_id: params.variantId,
+        quantity: params.quantity,
+      }),
+    }
+  )
+  return cart
+}
+
+export async function removeLineItem(cartId: string, lineItemId: string): Promise<Cart> {
+  const { cart } = await apiRequest<{ cart: Cart }>(
+    `/store/carts/${cartId}/line-items/${lineItemId}`,
+    { method: "DELETE" }
+  )
+  return cart
+}
+
+export async function updateLineItem(
+  cartId: string,
+  lineItemId: string,
+  params: { quantity: number }
+): Promise<Cart> {
+  const { cart } = await apiRequest<{ cart: Cart }>(
+    `/store/carts/${cartId}/line-items/${lineItemId}`,
+    {
+      method: "POST",
+      body: JSON.stringify(params),
+    }
+  )
+  return cart
+}
+```
+
+---
+
+## Data Fetching Patterns
+
+### Pattern 1: Parallel Fetching (Best for Pages)
+```ts
+// Always fetch in parallel — never sequentially
+const [product, recommendations, inventory] = await Promise.all([
+  getProduct(handle),
+  getRelatedProducts(handle, { limit: 4 }),
+  getInventoryStatus(handle),
+])
+```
+
+### Pattern 2: Error-First Design
+```ts
+// lib/api/safe-fetch.ts
+export async function safeFetch<T>(
+  fn: () => Promise<T>,
+  fallback: T
+): Promise<T> {
+  try {
+    return await fn()
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[API Error]", err)
+    }
+    return fallback
+  }
+}
+
+// Usage:
+const products = await safeFetch(() => getProducts({ limit: 8 }), [])
+```
+
+### Pattern 3: SWR for Client-Side Mutations
+```ts
+// For real-time data that needs to stay fresh on the client
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then(r => r.json())
+
+export function useWishlist() {
+  const { data, mutate, isLoading } = useSWR("/api/wishlist", fetcher)
+
+  const addToWishlist = async (productId: string) => {
+    await mutate(
+      fetch("/api/wishlist", {
+        method: "POST",
+        body: JSON.stringify({ productId }),
+      }).then(r => r.json()),
+      { optimisticData: [...(data ?? []), { productId }] }
+    )
+  }
+
+  return { items: data ?? [], addToWishlist, isLoading }
+}
+```
+
+---
+
+## Price Utility
+
+```ts
+// lib/utils/price.ts
+import type { Money } from "@/types/product"
+
+const formatters = new Map<string, Intl.NumberFormat>()
+
+export function formatPrice(money: Money | undefined | null): string {
+  if (!money) return ""
+
+  const key = money.currency_code
+  if (!formatters.has(key)) {
+    formatters.set(
+      key,
+      new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: money.currency_code,
+        minimumFractionDigits: 2,
+      })
+    )
+  }
+
+  // Prices stored as integers in smallest unit (cents)
+  return formatters.get(key)!.format(money.amount / 100)
+}
+
+export function calculateDiscount(original: number, sale: number): number {
+  return Math.round(((original - sale) / original) * 100)
+}
+```
+
+---
+
+## Anti-Patterns
+
+❌ Never fetch in `useEffect` for initial page data — use RSC  
+❌ Never expose API keys or secret tokens to the client  
+❌ Never swallow errors silently — always log and handle  
+❌ Never fetch sequentially when parallel is possible  
+❌ Never hardcode prices or currency in UI strings  
