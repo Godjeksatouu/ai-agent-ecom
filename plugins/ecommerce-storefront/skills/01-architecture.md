@@ -200,3 +200,13 @@ NEXT_PUBLIC_STRIPE_KEY=pk_test_...         # Payment processor
 ```
 
 **Rule**: Any variable used in Server Components only → no `NEXT_PUBLIC_` prefix (stays server-side).
+
+---
+
+## Anti-Patterns Reference
+> See `skill:anti-patterns` for the complete anti-pattern catalog and THINK→PLAN→EXECUTE→REVIEW→IMPROVE protocol.
+
+❌ Don't put page-level logic in layout files  
+❌ Don't share route group layouts between `(store)` and `(account)`  
+❌ Don't create catch-all routes without a proper `not-found.tsx`  
+❌ Don't skip `error.tsx` boundaries on data-heavy routes  

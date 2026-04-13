@@ -282,3 +282,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   )
 }
 ```
+
+---
+
+## Anti-Patterns Reference
+> See `skill:anti-patterns` for the full catalog and REVIEW checklist.
+
+❌ Never use `<img>` — always `next/image` with `sizes`  
+❌ Never set `priority` on below-fold images — causes wasted preloads  
+❌ Never `quality={100}` on product images — use 80–85  
+❌ Never skip `revalidate` or cache tags on product/collection fetches  
+❌ Never block full page render — use `<Suspense>` for each async section  
