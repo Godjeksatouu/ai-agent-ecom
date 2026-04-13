@@ -1,7 +1,10 @@
 // components/ui/Button.tsx
+"use client"
+
 import { forwardRef } from "react"
 import { motion, HTMLMotionProps } from "framer-motion"
 import { variants } from "@/animations/variants"
+import { cn } from "@/utils/cn" // Assuming a utility exists or matches the pattern
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger"
 type ButtonSize = "sm" | "md" | "lg"
@@ -23,6 +26,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   className = "",
   ...props
 }, ref) => {
+  const variantsStyles = {
+    primary: "bg-black text-white hover:bg-neutral-800 shadow-sm",
+    secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-200 border-transparent",
+    outline: "bg-transparent border-neutral-200 text-neutral-900 hover:bg-neutral-50",
+    ghost: "bg-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
+    danger: "bg-red-50 text-red-600 hover:bg-red-100 border-transparent",
+  }
+
+  const sizes = {
+    sm: "px-4 py-2 text-sm",
+    md: "px-6 py-3 text-[15px]",
+    lg: "px-8 py-4 text-base",
+  }
+
   return (
     <motion.button
       ref={ref}
@@ -30,55 +47,24 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       variants={variants.buttonPress}
       whileHover="hover"
       whileTap="tap"
-      className={[
-        "btn",
-        `btn--${variant}`,
-        `btn--${size}`,
-        fullWidth ? "btn--full" : "",
-        isLoading ? "btn--loading" : "",
+      className={cn(
+        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-full border",
+        variantsStyles[variant],
+        sizes[size],
+        fullWidth ? "w-full" : "",
         className
-      ].filter(Boolean).join(" ")}
+      )}
       aria-busy={isLoading}
       {...props}
     >
-      {isLoading && <span className="btn__spinner" aria-hidden="true" />}
-      <span className={isLoading ? "btn__label btn__label--hidden" : "btn__label"}>
+      {isLoading ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
+      ) : null}
+      <span className={isLoading ? "invisible" : "visible"}>
         {children}
       </span>
     </motion.button>
   )
 })
+
 Button.displayName = "Button"
-
-/*
-CSS (add to your global styles):
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid transparent;
-  white-space: nowrap;
-  user-select: none;
-}
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn--primary { background: #111; color: #fff; }
-.btn--primary:hover:not(:disabled) { background: #333; }
-.btn--secondary { background: #f4f4f5; color: #111; }
-.btn--outline { border-color: #e4e4e7; background: transparent; color: #111; }
-.btn--ghost { background: transparent; color: #111; }
-.btn--ghost:hover:not(:disabled) { background: #f4f4f5; }
-.btn--sm { padding: 0.375rem 0.875rem; font-size: 0.875rem; }
-.btn--md { padding: 0.625rem 1.25rem; font-size: 0.9375rem; }
-.btn--lg { padding: 0.875rem 1.75rem; font-size: 1rem; }
-.btn--full { width: 100%; }
-.btn__spinner { width: 1em; height: 1em; border: 2px solid currentColor; 
-  border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
-.btn__label--hidden { visibility: hidden; position: absolute; }
-@keyframes spin { to { transform: rotate(360deg); } }
-*/
