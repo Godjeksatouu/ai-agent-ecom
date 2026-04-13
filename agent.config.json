@@ -31,6 +31,10 @@
     "vscode": {
       "instructionsDir": ".vscode/instructions",
       "autoSync": true
+    },
+    "antigravity": {
+      "rulesDir": ".antigravity/rules",
+      "autoSync": true
     }
   },
   "reasoning": {
