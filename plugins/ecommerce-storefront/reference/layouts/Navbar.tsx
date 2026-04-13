@@ -36,7 +36,14 @@ export function Navbar() {
       <nav className="container mx-auto flex items-center justify-between px-4 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-neutral-900">
-          <div className="h-8 w-8 rounded-lg bg-black" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-lg shadow-neutral-200">
+            <motion.div
+              animate={{ rotate: [0, 15, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ShoppingCart size={20} strokeWidth={2.5} />
+            </motion.div>
+          </div>
           <span>AGENCY</span>
         </Link>
 
