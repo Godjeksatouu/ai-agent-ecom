@@ -74,13 +74,13 @@ export function Hero() {
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
           className="relative aspect-square md:aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-neutral-200 shadow-2xl"
         >
-          {/* Replace with your image */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          <div className="flex h-full w-full items-center justify-center bg-[#fdfaf5] p-12">
-             <div className="text-center">
-                <span className="text-neutral-300 font-bold text-4xl opacity-20 select-none">IMAGE PLACEHOLDER</span>
-             </div>
-          </div>
+          <img
+            src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1200&q=80"
+            alt="Spring Collection 2026"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+            onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"; }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
           
           {/* Floating Card */}
           <motion.div

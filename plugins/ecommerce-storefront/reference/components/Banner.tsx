@@ -53,17 +53,13 @@ export function Banner({
           
           {/* Image Content */}
           <div className="relative hidden h-full min-h-[400px] lg:block overflow-hidden bg-neutral-800">
-             <div className="flex h-full w-full items-center justify-center">
-                <span className="text-neutral-600 font-bold text-lg">PROMO VISUAL</span>
-             </div>
-             {image && (
-               <img 
-                 src={image} 
-                 alt={title} 
-                 className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 hover:scale-110" 
-               />
-             )}
-             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
+             <img 
+               src={image || "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1200&q=80"} 
+               alt={title || "Promo Visual"} 
+               className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 hover:scale-110" 
+               onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1200&q=80"; }}
+             />
+             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
           </div>
         </div>
       </div>

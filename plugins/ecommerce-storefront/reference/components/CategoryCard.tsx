@@ -24,12 +24,17 @@ export function CategoryCard({ category }: CategoryCardProps) {
       className="group relative block aspect-[3/4] overflow-hidden rounded-[2rem] bg-neutral-100"
     >
       <Image
-        src={category.image}
-        alt={category.name}
+        src={category.image || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80"}
+        alt={category.name || "Category Image"}
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-105"
         sizes="(max-width: 768px) 100vw, 33vw"
         loading="lazy"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.srcset = "";
+          target.src = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80";
+        }}
       />
       
       {/* Overlay */}

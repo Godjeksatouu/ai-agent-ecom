@@ -38,12 +38,17 @@ export function ProductCard({ product }: ProductCardProps) {
           className="h-full w-full"
         >
           <Image
-            src={product.image}
-            alt={product.title}
+            src={product.image || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80"}
+            alt={product.title || "Product Image"}
             fill
             className="object-cover transition-opacity duration-300 group-hover:opacity-90"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.srcset = "";
+              target.src = "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80";
+            }}
           />
         </motion.div>
         
