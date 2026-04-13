@@ -1,5 +1,5 @@
 # ecommerce-storefront v2.0.0 — AI Agent Skills
-> Auto-generated 2026-04-13T04:41:44.350Z | Agent v2.0.0
+> Auto-generated 2026-04-13T04:42:28.231Z | Agent v2.0.0
 
 ## Reasoning Mode
 Apply: THINK → PLAN → EXECUTE → REVIEW → IMPROVE before every output.

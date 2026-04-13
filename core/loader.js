@@ -290,6 +290,7 @@ function printHelp() {
     ${c.cyan("--plugin")} <name>           Load a specific plugin
     ${c.cyan("--validate")}                Validate all active plugins (no file writes)
     ${c.cyan("--validate --plugin")} <n>   Validate a specific plugin
+    ${c.cyan("--analyze")} <path>          Analyze generated code for compliance
     ${c.cyan("--list")}                    List all available plugins
     ${c.cyan("--watch")}                   Watch for changes and auto-sync
     ${c.cyan("--cache-clear")}             Clear the skill cache
@@ -304,6 +305,7 @@ function printHelp() {
     node core/loader.js --sync --debug
     node core/loader.js --plugin ecommerce-storefront
     node core/loader.js --validate
+    node core/loader.js --analyze .
     node core/loader.js --watch
     node core/loader.js --cache-clear
 
