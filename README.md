@@ -29,6 +29,10 @@ Get your production eCommerce agent environment ready in under 60 seconds.
 Run the interactive setup wizard in your project root:
 
 ```bash
+# Recommended for latest version from GitHub
+npx github:Godjeksatouu/ai-agent-ecom --init
+
+# Alias (requires npm publishing)
 npx ai-agent-ecom --init
 ```
 

@@ -4,7 +4,19 @@
   "description": "Local-first plugin-based AI agent for eCommerce development",
   "type": "module",
   "bin": {
-    "ai-agent-ecom": "./bin/cli.js"
+    "ai-agent-ecom": "./bin/index.js"
+  },
+  "files": [
+    "bin",
+    "core",
+    "plugins",
+    "animations",
+    "agent.config.json",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Godjeksatouu/ai-agent-ecom.git"
   },
   "scripts": {
     "load": "node core/loader.js",
