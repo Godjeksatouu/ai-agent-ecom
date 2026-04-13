@@ -37,16 +37,21 @@ import {
 } from "./utils.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(__dirname, "..")
+const PKG_ROOT = path.resolve(__dirname, "..")
 const AGENT_VERSION = "2.0.0"
+
+// Detection for local project root
+const PROJECT_ROOT = fs.existsSync(path.join(process.cwd(), "agent.config.json"))
+  ? process.cwd()
+  : PKG_ROOT
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 function loadConfig() {
-  const configPath = path.join(ROOT, "agent.config.json")
+  const configPath = path.join(PROJECT_ROOT, "agent.config.json")
   if (!fs.existsSync(configPath)) {
     throw new Error(
-      `${c.red("agent.config.json not found.")} Run from the agent root directory.\n` +
+      `${c.red("agent.config.json not found.")} Run --init or check current directory.\n` +
       `Expected: ${configPath}`
     )
   }
@@ -56,9 +61,17 @@ function loadConfig() {
 // ─── Plugin Registry ──────────────────────────────────────────────────────────
 
 function getAvailablePlugins() {
-  const pluginsDir = path.join(ROOT, "plugins")
-  if (!fs.existsSync(pluginsDir)) return []
+  const pluginsDir = path.join(PROJECT_ROOT, "plugins")
+  if (!fs.existsSync(pluginsDir)) {
+    // Fallback to package plugins if not in project
+    const pkgPluginsDir = path.join(PKG_ROOT, "plugins")
+    if (fs.existsSync(pkgPluginsDir)) return scanPluginsDir(pkgPluginsDir)
+    return []
+  }
+  return scanPluginsDir(pluginsDir)
+}
 
+function scanPluginsDir(pluginsDir) {
   return fs.readdirSync(pluginsDir)
     .filter(name => fs.statSync(path.join(pluginsDir, name)).isDirectory())
     .map(name => {
@@ -196,7 +209,7 @@ ${manifest.modelHints?.systemPromptAppend ?? ""}
 // ─── Output Writers ───────────────────────────────────────────────────────────
 
 function writeCursorRule(content, pluginName, config) {
-  const rulesDir = path.join(ROOT, config.editor.cursor.rulesDir)
+  const rulesDir = path.join(PROJECT_ROOT, config.editor.cursor.rulesDir)
   fs.mkdirSync(rulesDir, { recursive: true })
   const outputPath = path.join(rulesDir, `${pluginName}.mdc`)
   fs.writeFileSync(outputPath, content, "utf-8")
@@ -204,7 +217,7 @@ function writeCursorRule(content, pluginName, config) {
 }
 
 function writeVSCodeInstruction(content, pluginName, config) {
-  const instructionsDir = path.join(ROOT, config.editor.vscode.instructionsDir)
+  const instructionsDir = path.join(PROJECT_ROOT, config.editor.vscode.instructionsDir)
   fs.mkdirSync(instructionsDir, { recursive: true })
   const outputPath = path.join(instructionsDir, `${pluginName}.md`)
   fs.writeFileSync(outputPath, content, "utf-8")
@@ -212,7 +225,7 @@ function writeVSCodeInstruction(content, pluginName, config) {
 }
 
 function writeAntigravityRule(content, pluginName, config) {
-  const rulesDir = path.join(ROOT, config.editor.antigravity.rulesDir)
+  const rulesDir = path.join(PROJECT_ROOT, config.editor.antigravity.rulesDir)
   fs.mkdirSync(rulesDir, { recursive: true })
   const outputPath = path.join(rulesDir, `${pluginName}.md`)
   fs.writeFileSync(outputPath, content, "utf-8")
@@ -223,7 +236,7 @@ function writeAntigravityRule(content, pluginName, config) {
 
 async function loadPlugin(pluginName, config, cache, options = {}) {
   const start = Date.now()
-  const pluginDir = path.join(ROOT, "plugins", pluginName)
+  const pluginDir = path.join(PROJECT_ROOT, "plugins", pluginName)
   const manifestPath = path.join(pluginDir, "plugin.json")
 
   if (!fs.existsSync(pluginDir)) {
@@ -286,7 +299,7 @@ async function watchPlugins(config, cache) {
   console.log(`\n${c.cyan("👁 ")} Watch mode active — watching plugins/ for changes…`)
   console.log(c.dim("   Press Ctrl+C to stop.\n"))
 
-  const pluginsDir = path.join(ROOT, "plugins")
+  const pluginsDir = path.join(PROJECT_ROOT, "plugins")
   let debounceTimer = null
 
   const triggerSync = () => {
@@ -358,8 +371,7 @@ function printHelp() {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
-  const args = process.argv.slice(2)
+export async function main(args = process.argv.slice(2)) {
 
   if (args.includes("--help") || args.length === 0) {
     printHelp()
@@ -373,7 +385,7 @@ async function main() {
   const cache = new SkillCache({
     enabled: config.settings.cache?.enabled ?? true,
     cacheDir: config.settings.cache?.dir ?? ".agent-cache",
-    root: ROOT,
+    root: PROJECT_ROOT,
   })
 
   if (isDebug) {
@@ -417,7 +429,7 @@ async function main() {
     let allValid = true
 
     for (const name of targets) {
-      const pluginDir = path.join(ROOT, "plugins", name)
+      const pluginDir = path.join(PROJECT_ROOT, "plugins", name)
       const manifestPath = path.join(pluginDir, "plugin.json")
       if (!fs.existsSync(manifestPath)) {
         console.log(c.red(`\n❌ Plugin '${name}' not found`))
@@ -439,7 +451,7 @@ async function main() {
   if (analyzeIdx !== -1) {
     const target = args[analyzeIdx + 1] ?? "."
     console.log(`\n${c.bold("🔍 Analyzing code compliance:")} ${c.cyan(target)}`)
-    const analyzer = new AgentAnalyzer(ROOT)
+    const analyzer = new AgentAnalyzer(PROJECT_ROOT)
     try {
       const findings = await analyzer.scan(target)
       analyzer.printReport(findings)
@@ -452,7 +464,7 @@ async function main() {
   // ── Sync all ──
   if (args.includes("--sync")) {
     const globalStart = Date.now()
-    console.log(`\n${c.bold("🔄")} Syncing ${c.cyan(config.activePlugins.length)} active plugin(s)… ${c.dim(`[agent v${AGENT_VERSION}]`)}`)
+    console.log(`\n${c.bold("🔄")} Syncing active plugin(s) in ${c.cyan(PROJECT_ROOT)}…`)
 
     // Resolve dependency order
     const allPlugins = getAvailablePlugins()
@@ -498,8 +510,10 @@ async function main() {
   process.exit(1)
 }
 
-main().catch(err => {
-  console.error(`\n${c.red("❌ Error:")} ${err.message}`)
-  if (process.env.DEBUG) console.error(err.stack)
-  process.exit(1)
-})
+if (import.meta.url === `file://${process.argv[1]}`.replace(/\\/g, '/')) {
+  main().catch(err => {
+    console.error(`\n${c.red("❌ Error:")} ${err.message}`)
+    if (process.env.DEBUG) console.error(err.stack)
+    process.exit(1)
+  })
+}

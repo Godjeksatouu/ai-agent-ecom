@@ -1,8 +1,11 @@
 {
   "name": "ai-agent-ecom",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Local-first plugin-based AI agent for eCommerce development",
   "type": "module",
+  "bin": {
+    "ai-agent-ecom": "./bin/cli.js"
+  },
   "scripts": {
     "load": "node core/loader.js",
     "sync": "node core/loader.js --sync",
