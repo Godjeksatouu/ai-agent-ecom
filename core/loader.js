@@ -1,26 +1,53 @@
 /**
- * AI Agent eCommerce — Plugin Loader (Core)
- * 
+ * AI Agent eCommerce — Plugin Loader v2
+ *
+ * New in v2:
+ *   - Skill caching (mtime-based, skips unchanged files)
+ *   - Plugin validation before sync
+ *   - Dependency-aware load ordering (topological sort)
+ *   - Smart skill selection by task keyword
+ *   - --validate, --watch, --debug CLI commands
+ *   - Colored terminal output
+ *   - Agent version compatibility check
+ *   - Multi-plugin sync with shared cache
+ *
  * Usage:
+ *   node core/loader.js --sync
  *   node core/loader.js --plugin ecommerce-storefront
- *   node core/loader.js --plugin ecommerce-storefront --output .cursor/rules
+ *   node core/loader.js --validate
+ *   node core/loader.js --validate --plugin ecommerce-storefront
  *   node core/loader.js --list
- *   node core/loader.js --sync (sync all active plugins from agent.config.json)
+ *   node core/loader.js --watch
+ *   node core/loader.js --cache-clear
+ *   node core/loader.js --debug --sync
  */
 
 import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
+import { SkillCache } from "./cache.js"
+import { validatePlugin, printValidationReport } from "./validator.js"
+import {
+  checkAgentVersionCompatibility,
+  resolveLoadOrder,
+  selectRelevantSkills,
+  formatDuration,
+  c,
+} from "./utils.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
+const AGENT_VERSION = "2.0.0"
 
-// ─── Load Configuration ───────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 function loadConfig() {
   const configPath = path.join(ROOT, "agent.config.json")
   if (!fs.existsSync(configPath)) {
-    throw new Error("agent.config.json not found. Run from the agent root directory.")
+    throw new Error(
+      `${c.red("agent.config.json not found.")} Run from the agent root directory.\n` +
+      `Expected: ${configPath}`
+    )
   }
   return JSON.parse(fs.readFileSync(configPath, "utf-8"))
 }
@@ -29,70 +56,107 @@ function loadConfig() {
 
 function getAvailablePlugins() {
   const pluginsDir = path.join(ROOT, "plugins")
+  if (!fs.existsSync(pluginsDir)) return []
+
   return fs.readdirSync(pluginsDir)
     .filter(name => fs.statSync(path.join(pluginsDir, name)).isDirectory())
     .map(name => {
       const manifestPath = path.join(pluginsDir, name, "plugin.json")
       if (!fs.existsSync(manifestPath)) return null
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
-      return { name, path: path.join(pluginsDir, name), manifest }
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
+        return { name, path: path.join(pluginsDir, name), manifest }
+      } catch (err) {
+        console.warn(c.yellow(`  ⚠ Failed to parse plugin.json for '${name}': ${err.message}`))
+        return null
+      }
     })
     .filter(Boolean)
 }
 
-// ─── Skill Loader ─────────────────────────────────────────────────────────────
+// ─── Skill Loader (with cache) ────────────────────────────────────────────────
 
-function loadPluginSkills(pluginDir, manifest, options = {}) {
+function loadPluginSkills(pluginDir, manifest, cache, options = {}) {
   const skills = []
   const maxSkills = options.maxSkills ?? 10
+  const taskHint = options.taskHint ?? null
+  const isDebug = options.debug ?? false
 
+  // Sort by priority, then optionally re-rank by task relevance
   const sortedSkills = [...manifest.skills].sort((a, b) => a.priority - b.priority)
-  const selectedSkills = sortedSkills.slice(0, maxSkills)
+  const selectedSkills = taskHint
+    ? selectRelevantSkills(sortedSkills, taskHint, maxSkills)
+    : sortedSkills.slice(0, maxSkills)
+
+  let cacheHits = 0
+  let cacheMisses = 0
 
   for (const skill of selectedSkills) {
     const skillPath = path.join(pluginDir, skill.file)
+
     if (!fs.existsSync(skillPath)) {
-      console.warn(`  ⚠ Skill file not found: ${skill.file}`)
+      console.warn(c.yellow(`  ⚠ Skill file not found: ${skill.file}`))
       continue
     }
-    const content = fs.readFileSync(skillPath, "utf-8")
-    skills.push({ id: skill.id, description: skill.description, content })
+
+    // Check cache first
+    const cached = cache.get(skillPath)
+    if (cached !== null) {
+      skills.push({ id: skill.id, description: skill.description, content: cached, triggers: skill.triggers })
+      cacheHits++
+    } else {
+      const content = fs.readFileSync(skillPath, "utf-8")
+      cache.set(skillPath, content)
+      skills.push({ id: skill.id, description: skill.description, content, triggers: skill.triggers })
+      cacheMisses++
+    }
+  }
+
+  if (isDebug) {
+    console.log(c.dim(`     cache: ${cacheHits} hits, ${cacheMisses} misses`))
   }
 
   return skills
 }
 
-// ─── Context Builder ──────────────────────────────────────────────────────────
+// ─── Context Builders ─────────────────────────────────────────────────────────
 
-function buildCursorRuleContent(manifest, skills) {
+function buildCursorRuleContent(manifest, skills, config) {
   const timestamp = new Date().toISOString()
+  const reasoningBlock = config.reasoning?.enabled
+    ? `\n## Reasoning Protocol\nBefore generating any code, apply this loop internally:\n1. **THINK** — understand what is being asked\n2. **PLAN** — choose the right skills and patterns\n3. **EXECUTE** — generate the code following skills exactly\n4. **REVIEW** — check against anti-patterns list\n5. **IMPROVE** — refine before outputting\n\n> Self-critique: Before every response, ask: "Does this follow production patterns? Is there a simpler approach?"\n`
+    : ""
+
   const header = `---
 description: ${manifest.description}
-globs: **/*.{ts,tsx,js,jsx}
+globs: "**/*.{ts,tsx,js,jsx,json}"
 alwaysApply: true
 ---
 
-# ${manifest.name} — AI Agent Skills
-> Auto-generated by ai-agent-ecom loader | ${timestamp}
-> Version: ${manifest.version}
-
+# ${manifest.name} v${manifest.version} — AI Agent Skills
+> Auto-generated by ai-agent-ecom v${AGENT_VERSION} | ${timestamp}
+${reasoningBlock}
 ${manifest.modelHints?.systemPromptAppend ?? ""}
 
 ---
 
 `
   const skillSections = skills
-    .map(skill => `## ${skill.id}\n${skill.content}`)
+    .map(skill => `## Skill: ${skill.id}\n> ${skill.description}\n\n${skill.content}`)
     .join("\n\n---\n\n")
 
   return header + skillSections
 }
 
-function buildVSCodeInstructionContent(manifest, skills) {
+function buildVSCodeInstructionContent(manifest, skills, config) {
   const timestamp = new Date().toISOString()
-  const header = `# ${manifest.name} — AI Agent Skills
-> Auto-generated ${timestamp} | v${manifest.version}
+  const reasoningBlock = config.reasoning?.enabled
+    ? `\n## Reasoning Mode\nApply: THINK → PLAN → EXECUTE → REVIEW → IMPROVE before every output.\n`
+    : ""
 
+  const header = `# ${manifest.name} v${manifest.version} — AI Agent Skills
+> Auto-generated ${timestamp} | Agent v${AGENT_VERSION}
+${reasoningBlock}
 ${manifest.modelHints?.systemPromptAppend ?? ""}
 
 `
@@ -121,59 +185,133 @@ function writeVSCodeInstruction(content, pluginName, config) {
   return outputPath
 }
 
-// ─── CLI ──────────────────────────────────────────────────────────────────────
+// ─── Plugin Loader (single) ───────────────────────────────────────────────────
 
-function printHelp() {
-  console.log(`
-  ai-agent-ecom loader
-
-  Commands:
-    --plugin <name>    Load a specific plugin and generate context files
-    --list             List all available plugins
-    --sync             Sync all active plugins from agent.config.json
-    --help             Show this help
-
-  Options:
-    --output <dir>     Override output directory for context files
-    --verbose          Enable verbose logging
-
-  Examples:
-    node core/loader.js --plugin ecommerce-storefront
-    node core/loader.js --sync
-    node core/loader.js --list
-  `)
-}
-
-async function loadPlugin(pluginName, config, options = {}) {
+async function loadPlugin(pluginName, config, cache, options = {}) {
+  const start = Date.now()
   const pluginDir = path.join(ROOT, "plugins", pluginName)
   const manifestPath = path.join(pluginDir, "plugin.json")
 
   if (!fs.existsSync(pluginDir)) {
-    throw new Error(`Plugin '${pluginName}' not found in plugins/`)
+    throw new Error(`Plugin ${c.bold(pluginName)} not found in plugins/\n  Expected: ${pluginDir}`)
   }
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Missing plugin.json in plugins/${pluginName}/`)
   }
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
-  console.log(`\n📦 Loading plugin: ${manifest.name} v${manifest.version}`)
+  console.log(`\n${c.cyan("📦")} Loading ${c.bold(manifest.name)} ${c.dim(`v${manifest.version}`)}`)
 
-  const skills = loadPluginSkills(pluginDir, manifest, {
-    maxSkills: config.settings.maxSkillsPerContext
+  // Version compatibility check
+  const compat = checkAgentVersionCompatibility(AGENT_VERSION, manifest)
+  if (!compat.compatible) {
+    throw new Error(compat.reason)
+  }
+
+  // Validate before loading (always in v2)
+  const pluginList = getAvailablePlugins().map(p => p.name)
+  const validation = validatePlugin(pluginDir, manifest, pluginList)
+  if (!validation.isValid) {
+    printValidationReport(pluginName, validation)
+    throw new Error(`Plugin '${pluginName}' failed validation — fix errors above before syncing.`)
+  }
+  if (validation.warnings.length > 0 && options.debug) {
+    printValidationReport(pluginName, validation)
+  }
+
+  // Load skills (with cache)
+  const skills = loadPluginSkills(pluginDir, manifest, cache, {
+    maxSkills: config.settings.maxSkillsPerContext,
+    taskHint: options.taskHint,
+    debug: options.debug,
   })
-  console.log(`  ✓ Loaded ${skills.length} skills`)
+  console.log(`  ${c.green("✓")} Loaded ${skills.length} skills ${c.dim(`(${validation.warnings.length} warnings)`)}`)
 
-  // Generate Cursor rules
-  const cursorContent = buildCursorRuleContent(manifest, skills)
+  // Generate editor context files
+  const cursorContent = buildCursorRuleContent(manifest, skills, config)
   const cursorPath = writeCursorRule(cursorContent, pluginName, config)
-  console.log(`  ✓ Cursor rule → ${cursorPath}`)
+  console.log(`  ${c.green("✓")} Cursor rule ${c.dim("→")} ${cursorPath}`)
 
-  // Generate VS Code instructions
-  const vscodeContent = buildVSCodeInstructionContent(manifest, skills)
+  const vscodeContent = buildVSCodeInstructionContent(manifest, skills, config)
   const vscodePath = writeVSCodeInstruction(vscodeContent, pluginName, config)
-  console.log(`  ✓ VS Code instruction → ${vscodePath}`)
+  console.log(`  ${c.green("✓")} VS Code instruction ${c.dim("→")} ${vscodePath}`)
 
-  return { manifest, skills, cursorPath, vscodePath }
+  console.log(c.dim(`     completed in ${formatDuration(start)}`))
+
+  return { manifest, skills, cursorPath, vscodePath, validation }
+}
+
+// ─── Watch Mode ───────────────────────────────────────────────────────────────
+
+async function watchPlugins(config, cache) {
+  console.log(`\n${c.cyan("👁 ")} Watch mode active — watching plugins/ for changes…`)
+  console.log(c.dim("   Press Ctrl+C to stop.\n"))
+
+  const pluginsDir = path.join(ROOT, "plugins")
+  let debounceTimer = null
+
+  const triggerSync = () => {
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(async () => {
+      console.log(c.dim("\n[watch] Change detected — re-syncing…"))
+      cache.clear()
+      for (const pluginName of config.activePlugins) {
+        try {
+          await loadPlugin(pluginName, config, cache, {})
+        } catch (err) {
+          console.error(c.red(`[watch] ❌ ${err.message}`))
+        }
+      }
+      cache.save()
+      console.log(c.green("[watch] ✅ Re-sync complete"))
+    }, 300)
+  }
+
+  fs.watch(pluginsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && !filename.includes(".agent-cache")) {
+      console.log(c.dim(`[watch] ${eventType}: ${filename}`))
+      triggerSync()
+    }
+  })
+
+  // Keep alive
+  await new Promise(() => {})
+}
+
+// ─── CLI ──────────────────────────────────────────────────────────────────────
+
+function printHelp() {
+  console.log(`
+  ${c.bold("ai-agent-ecom")} ${c.dim(`v${AGENT_VERSION}`)} — Plugin Loader
+
+  ${c.bold("Commands:")}
+    ${c.cyan("--sync")}                    Sync all active plugins from agent.config.json
+    ${c.cyan("--plugin")} <name>           Load a specific plugin
+    ${c.cyan("--validate")}                Validate all active plugins (no file writes)
+    ${c.cyan("--validate --plugin")} <n>   Validate a specific plugin
+    ${c.cyan("--list")}                    List all available plugins
+    ${c.cyan("--watch")}                   Watch for changes and auto-sync
+    ${c.cyan("--cache-clear")}             Clear the skill cache
+    ${c.cyan("--help")}                    Show this help
+
+  ${c.bold("Options:")}
+    ${c.cyan("--debug")}                   Show detailed reasoning and cache stats
+    ${c.cyan("--task")} <description>      Hint for smart skill selection
+
+  ${c.bold("Examples:")}
+    node core/loader.js --sync
+    node core/loader.js --sync --debug
+    node core/loader.js --plugin ecommerce-storefront
+    node core/loader.js --validate
+    node core/loader.js --watch
+    node core/loader.js --cache-clear
+
+  ${c.bold("npm shortcuts:")}
+    npm run sync
+    npm run validate
+    npm run watch
+    npm run list
+  `)
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -187,40 +325,124 @@ async function main() {
   }
 
   const config = loadConfig()
+  const isDebug = args.includes("--debug") || config.settings.debug
 
+  // Initialize cache
+  const cache = new SkillCache({
+    enabled: config.settings.cache?.enabled ?? true,
+    cacheDir: config.settings.cache?.dir ?? ".agent-cache",
+    root: ROOT,
+  })
+
+  if (isDebug) {
+    console.log(c.dim(`\n[debug] Cache: ${JSON.stringify(cache.stats)}`))
+    console.log(c.dim(`[debug] Active plugins: ${config.activePlugins.join(", ")}`))
+  }
+
+  // ── Cache Clear ──
+  if (args.includes("--cache-clear")) {
+    cache.clear()
+    console.log(c.green("✅ Cache cleared."))
+    return
+  }
+
+  // ── List ──
   if (args.includes("--list")) {
     const plugins = getAvailablePlugins()
-    console.log("\n📋 Available plugins:\n")
-    plugins.forEach(p => {
+    console.log(`\n${c.bold("📋 Available plugins:")}\n`)
+    for (const p of plugins) {
       const isActive = config.activePlugins.includes(p.name)
-      console.log(`  ${isActive ? "✓" : "○"} ${p.name}`)
+      const compat = checkAgentVersionCompatibility(AGENT_VERSION, p.manifest)
+      const compatIcon = compat.compatible ? "" : c.red(" ⚠ incompatible")
+      console.log(`  ${isActive ? c.green("✓") : "○"} ${c.bold(p.name)}${compatIcon}`)
       console.log(`      ${p.manifest.description}`)
-      console.log(`      Skills: ${p.manifest.skills.length} | v${p.manifest.version}\n`)
-    })
-    return
-  }
-
-  if (args.includes("--sync")) {
-    console.log(`\n🔄 Syncing ${config.activePlugins.length} active plugin(s)…`)
-    for (const pluginName of config.activePlugins) {
-      await loadPlugin(pluginName, config)
+      console.log(`      ${c.dim(`Skills: ${p.manifest.skills.length} | v${p.manifest.version} | deps: ${(p.manifest.dependencies ?? []).length}`)}`)
+      if (isActive) console.log(`      ${c.green("active")}`)
+      console.log()
     }
-    console.log("\n✅ Sync complete!")
     return
   }
 
+  // ── Validate ──
+  if (args.includes("--validate")) {
+    const pluginList = getAvailablePlugins().map(p => p.name)
+    const pluginIdx = args.indexOf("--plugin")
+    const targets = pluginIdx !== -1 && args[pluginIdx + 1]
+      ? [args[pluginIdx + 1]]
+      : config.activePlugins
+
+    console.log(`\n${c.bold("🔍 Validating plugins…")}`)
+    let allValid = true
+
+    for (const name of targets) {
+      const pluginDir = path.join(ROOT, "plugins", name)
+      const manifestPath = path.join(pluginDir, "plugin.json")
+      if (!fs.existsSync(manifestPath)) {
+        console.log(c.red(`\n❌ Plugin '${name}' not found`))
+        allValid = false
+        continue
+      }
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
+      const result = validatePlugin(pluginDir, manifest, pluginList)
+      printValidationReport(name, result)
+      if (!result.isValid) allValid = false
+    }
+
+    if (!allValid) process.exit(1)
+    return
+  }
+
+  // ── Sync all ──
+  if (args.includes("--sync")) {
+    const globalStart = Date.now()
+    console.log(`\n${c.bold("🔄")} Syncing ${c.cyan(config.activePlugins.length)} active plugin(s)… ${c.dim(`[agent v${AGENT_VERSION}]`)}`)
+
+    // Resolve dependency order
+    const allPlugins = getAvailablePlugins()
+    const loadOrder = resolveLoadOrder(config.activePlugins, allPlugins)
+    if (isDebug) console.log(c.dim(`[debug] Load order: ${loadOrder.join(" → ")}`))
+
+    const taskIdx = args.indexOf("--task")
+    const taskHint = taskIdx !== -1 ? args[taskIdx + 1] : null
+    if (taskHint && isDebug) console.log(c.dim(`[debug] Task hint: "${taskHint}"`))
+
+    for (const pluginName of loadOrder) {
+      await loadPlugin(pluginName, config, cache, { debug: isDebug, taskHint })
+    }
+
+    cache.save()
+    console.log(`\n${c.green("✅ Sync complete!")} ${c.dim(`(${formatDuration(globalStart)} total)`)}`)
+    return
+  }
+
+  // ── Load specific plugin ──
   const pluginIdx = args.indexOf("--plugin")
   if (pluginIdx !== -1 && args[pluginIdx + 1]) {
-    await loadPlugin(args[pluginIdx + 1], config)
-    console.log("\n✅ Plugin loaded!")
+    const taskIdx = args.indexOf("--task")
+    const taskHint = taskIdx !== -1 ? args[taskIdx + 1] : null
+    await loadPlugin(args[pluginIdx + 1], config, cache, { debug: isDebug, taskHint })
+    cache.save()
+    console.log(`\n${c.green("✅ Plugin loaded!")}`)
     return
   }
 
-  console.error("Unknown command. Run --help for usage.")
+  // ── Watch ──
+  if (args.includes("--watch")) {
+    // Initial sync before watching
+    for (const pluginName of config.activePlugins) {
+      await loadPlugin(pluginName, config, cache, { debug: isDebug })
+    }
+    cache.save()
+    await watchPlugins(config, cache)
+    return
+  }
+
+  console.error(c.red("Unknown command.") + " Run --help for usage.")
   process.exit(1)
 }
 
 main().catch(err => {
-  console.error("\n❌ Error:", err.message)
+  console.error(`\n${c.red("❌ Error:")} ${err.message}`)
+  if (process.env.DEBUG) console.error(err.stack)
   process.exit(1)
 })
