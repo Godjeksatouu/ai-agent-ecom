@@ -1,46 +1,68 @@
 {
   "name": "ecommerce-storefront",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "minAgentVersion": "2.0.0",
   "description": "Expert-level skills for building production-grade Next.js eCommerce storefronts",
   "author": "AI Agent eCommerce",
   "category": "storefront",
   "tags": ["nextjs", "react", "ecommerce", "storefront", "typescript"],
+  "dependencies": [],
   "skills": [
     {
       "id": "storefront-architecture",
       "file": "skills/01-architecture.md",
       "description": "Next.js storefront architecture, routing, and project structure",
-      "priority": 1
+      "priority": 1,
+      "tags": ["architecture", "routing", "structure"],
+      "triggers": ["architecture", "project structure", "routing", "app router", "folder"]
     },
     {
       "id": "product-components",
       "file": "skills/02-product-components.md",
       "description": "Product listing, detail pages, and UI components",
-      "priority": 2
+      "priority": 2,
+      "tags": ["product", "components", "ui", "pdp"],
+      "triggers": ["product card", "product list", "pdp", "gallery", "variant", "product detail"]
     },
     {
       "id": "cart-checkout",
       "file": "skills/03-cart-checkout.md",
       "description": "Cart state management, checkout flows, and payment integration",
-      "priority": 3
+      "priority": 3,
+      "tags": ["cart", "checkout", "payment", "zustand"],
+      "triggers": ["cart", "checkout", "payment", "stripe", "order", "line item"]
     },
     {
       "id": "performance-seo",
       "file": "skills/04-performance-seo.md",
       "description": "Performance optimization and SEO best practices for storefronts",
-      "priority": 4
+      "priority": 4,
+      "tags": ["performance", "seo", "cwv", "image", "isr"],
+      "triggers": ["performance", "seo", "image", "lcp", "sitemap", "metadata", "json-ld"]
     },
     {
       "id": "auth-accounts",
       "file": "skills/05-auth-accounts.md",
       "description": "Authentication, customer accounts, and order history",
-      "priority": 5
+      "priority": 5,
+      "tags": ["auth", "login", "accounts", "session", "cookie"],
+      "triggers": ["auth", "login", "register", "session", "customer", "account", "cookie"]
     },
     {
       "id": "api-integration",
       "file": "skills/06-api-integration.md",
       "description": "Backend API integration patterns and data fetching strategies",
-      "priority": 6
+      "priority": 6,
+      "tags": ["api", "fetch", "client", "data", "cache"],
+      "triggers": ["api", "fetch", "data fetching", "endpoint", "client", "price", "currency"]
+    },
+    {
+      "id": "anti-patterns",
+      "file": "skills/07-anti-patterns.md",
+      "description": "Anti-pattern detection and self-critique rules for production output",
+      "priority": 7,
+      "tags": ["quality", "anti-patterns", "review", "critique"],
+      "triggers": ["review", "quality", "check", "critique", "best practice"]
     }
   ],
   "reference": [
@@ -61,9 +83,20 @@
     }
   ],
   "cursorRules": ".cursor/rules/ecommerce-storefront.mdc",
+  "validation": {
+    "requiredSkillIds": [
+      "storefront-architecture",
+      "product-components",
+      "cart-checkout",
+      "anti-patterns"
+    ],
+    "requiredReferenceIds": ["component-library"]
+  },
   "modelHints": {
-    "systemPromptAppend": "You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience.",
+    "systemPromptAppend": "You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience. Before outputting any code, mentally apply the THINK → PLAN → EXECUTE → REVIEW → IMPROVE loop. Catch anti-patterns before they appear in output.",
     "temperature": 0.3,
-    "preferStructured": true
+    "preferStructured": true,
+    "reasoningLoop": true,
+    "selfCritiqueBeforeOutput": true
   }
 }
