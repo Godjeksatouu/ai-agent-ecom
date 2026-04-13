@@ -1,6 +1,6 @@
 {
   "name": "ai-agent-ecom",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Local-first plugin-based AI agent for eCommerce development",
   "activePlugins": [
     "ecommerce-storefront"
@@ -10,7 +10,14 @@
     "contextOutputDir": "./.cursor/rules",
     "maxSkillsPerContext": 10,
     "includeReference": true,
-    "verboseLoader": false
+    "verboseLoader": false,
+    "cache": {
+      "enabled": true,
+      "dir": ".agent-cache",
+      "ttlSeconds": 3600
+    },
+    "debug": false,
+    "watchMode": false
   },
   "models": {
     "preferred": "claude",
@@ -25,5 +32,11 @@
       "instructionsDir": ".vscode/instructions",
       "autoSync": true
     }
+  },
+  "reasoning": {
+    "enabled": true,
+    "loop": ["THINK", "PLAN", "EXECUTE", "REVIEW", "IMPROVE"],
+    "selfCritiqueEnabled": true,
+    "antiPatternCheckEnabled": true
   }
 }
