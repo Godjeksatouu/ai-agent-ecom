@@ -1,0 +1,29 @@
+{
+  "name": "ai-agent-ecom",
+  "version": "1.0.0",
+  "description": "Local-first plugin-based AI agent for eCommerce development",
+  "activePlugins": [
+    "ecommerce-storefront"
+  ],
+  "settings": {
+    "skillsDir": "./plugins",
+    "contextOutputDir": "./.cursor/rules",
+    "maxSkillsPerContext": 10,
+    "includeReference": true,
+    "verboseLoader": false
+  },
+  "models": {
+    "preferred": "claude",
+    "compatible": ["claude", "gemini", "gpt-4", "mistral", "llama"]
+  },
+  "editor": {
+    "cursor": {
+      "rulesDir": ".cursor/rules",
+      "autoSync": true
+    },
+    "vscode": {
+      "instructionsDir": ".vscode/instructions",
+      "autoSync": true
+    }
+  }
+}
