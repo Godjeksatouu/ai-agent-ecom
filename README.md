@@ -117,7 +117,7 @@ Every line of code the agent generates follows these production constraints:
 ---
 
 ## 🤝 Contributing
-Built with ❤️ by AI Agent Architects. To add new plugins or skills, check the `plugins/README.md`.
+Built with Mohamedamine Satou by AI Agent Architects. To add new plugins or skills, check the `plugins/README.md`.
 
 ## 📄 License
 MIT © 2026 AI Agent eCommerce.
