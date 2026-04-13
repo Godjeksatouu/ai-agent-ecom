@@ -1,0 +1,69 @@
+{
+  "name": "ecommerce-storefront",
+  "version": "1.0.0",
+  "description": "Expert-level skills for building production-grade Next.js eCommerce storefronts",
+  "author": "AI Agent eCommerce",
+  "category": "storefront",
+  "tags": ["nextjs", "react", "ecommerce", "storefront", "typescript"],
+  "skills": [
+    {
+      "id": "storefront-architecture",
+      "file": "skills/01-architecture.md",
+      "description": "Next.js storefront architecture, routing, and project structure",
+      "priority": 1
+    },
+    {
+      "id": "product-components",
+      "file": "skills/02-product-components.md",
+      "description": "Product listing, detail pages, and UI components",
+      "priority": 2
+    },
+    {
+      "id": "cart-checkout",
+      "file": "skills/03-cart-checkout.md",
+      "description": "Cart state management, checkout flows, and payment integration",
+      "priority": 3
+    },
+    {
+      "id": "performance-seo",
+      "file": "skills/04-performance-seo.md",
+      "description": "Performance optimization and SEO best practices for storefronts",
+      "priority": 4
+    },
+    {
+      "id": "auth-accounts",
+      "file": "skills/05-auth-accounts.md",
+      "description": "Authentication, customer accounts, and order history",
+      "priority": 5
+    },
+    {
+      "id": "api-integration",
+      "file": "skills/06-api-integration.md",
+      "description": "Backend API integration patterns and data fetching strategies",
+      "priority": 6
+    }
+  ],
+  "reference": [
+    {
+      "id": "component-library",
+      "path": "reference/components/",
+      "description": "Reusable UI component templates"
+    },
+    {
+      "id": "layouts",
+      "path": "reference/layouts/",
+      "description": "Page layout templates"
+    },
+    {
+      "id": "features",
+      "path": "reference/features/",
+      "description": "Full feature implementations"
+    }
+  ],
+  "cursorRules": ".cursor/rules/ecommerce-storefront.mdc",
+  "modelHints": {
+    "systemPromptAppend": "You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience.",
+    "temperature": 0.3,
+    "preferStructured": true
+  }
+}
