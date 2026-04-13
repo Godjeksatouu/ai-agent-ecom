@@ -27,6 +27,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { SkillCache } from "./cache.js"
 import { validatePlugin, printValidationReport } from "./validator.js"
+import { AgentAnalyzer } from "./analyzer.js"
 import {
   checkAgentVersionCompatibility,
   resolveLoadOrder,
@@ -309,6 +310,7 @@ function printHelp() {
   ${c.bold("npm shortcuts:")}
     npm run sync
     npm run validate
+    npm run analyze <path>
     npm run watch
     npm run list
   `)
@@ -389,6 +391,21 @@ async function main() {
     }
 
     if (!allValid) process.exit(1)
+    return
+  }
+
+  // ── Analyze ──
+  const analyzeIdx = args.indexOf("--analyze")
+  if (analyzeIdx !== -1) {
+    const target = args[analyzeIdx + 1] ?? "."
+    console.log(`\n${c.bold("🔍 Analyzing code compliance:")} ${c.cyan(target)}`)
+    const analyzer = new AgentAnalyzer(ROOT)
+    try {
+      const findings = await analyzer.scan(target)
+      analyzer.printReport(findings)
+    } catch (err) {
+      console.error(c.red(`\n❌ Analysis failed: ${err.message}`))
+    }
     return
   }
 

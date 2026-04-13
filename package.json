@@ -8,6 +8,7 @@
     "sync": "node core/loader.js --sync",
     "sync:debug": "node core/loader.js --sync --debug",
     "validate": "node core/loader.js --validate",
+    "analyze": "node core/loader.js --analyze",
     "watch": "node core/loader.js --watch",
     "list": "node core/loader.js --list",
     "cache:clear": "node core/loader.js --cache-clear"
