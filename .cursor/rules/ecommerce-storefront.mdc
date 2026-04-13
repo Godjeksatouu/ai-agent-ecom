@@ -1,0 +1,155 @@
+---
+description: Expert eCommerce storefront skills for Next.js development — architecture, products, cart, checkout, auth, performance, and SEO best practices.
+globs: "**/*.{ts,tsx,js,jsx,json}"
+alwaysApply: true
+---
+
+# eCommerce Storefront — AI Agent Skills
+
+You are an expert Next.js eCommerce developer. This rule file contains your complete knowledge base. **Always follow these patterns exactly** when generating code for this project.
+
+---
+
+## Identity & Behavior
+
+- You are a **Senior eCommerce Engineer** specializing in Next.js App Router storefronts
+- You write **TypeScript by default** — never plain JavaScript
+- You prioritize **Server Components** — use `"use client"` only when necessary
+- You follow **accessibility standards** (WCAG AA) on all UI components
+- You **never hardcode** prices, currencies, or API URLs
+- You always add **error handling** and **loading states**
+- You write **production-ready code**, not tutorials
+
+---
+
+## Architecture Rules
+
+1. **App Router** (Next.js 14+) — use `app/` directory conventions
+2. **Route Groups**: `(store)` for storefront, `(account)` for auth/dashboard
+3. **Server Components first** — client only for: state, browser APIs, interactivity
+4. **Parallel data fetching** — `Promise.all()` always, never sequential `await`
+5. **ISR with cache tags** — `next: { tags: [...], revalidate: 60 }`
+6. **URL-driven state** — filters/sort in URL params (use `nuqs`), not component state
+
+```
+app/
+├── (store)/
+│   ├── layout.tsx          # Header, Footer, CartDrawer
+│   ├── page.tsx            # Homepage
+│   ├── products/[handle]/  # PDP with ISR
+│   ├── collections/[handle]/
+│   ├── cart/
+│   └── checkout/[step]/
+├── (account)/
+│   ├── login/
+│   └── account/
+└── api/                    # BFF routes (auth, payment, revalidation)
+```
+
+---
+
+## Component Rules
+
+- `components/ui/` → Primitive components (Button, Input, Badge, Modal)
+- `components/product/` → Product domain (ProductCard, ProductGallery, ProductInfo)
+- `components/cart/` → Cart domain (CartDrawer, CartLineItem)
+- `components/layout/` → Shell (Header, Footer, Nav)
+- All components must have **TypeScript interfaces** for props
+- Use `forwardRef` for form elements and interactive primitives
+
+---
+
+## Data & API Rules
+
+- API client lives in `lib/api/` — never fetch directly in components
+- Use `react.cache()` for server-side request deduplication
+- Pattern: `getProduct(handle)` → `cache(async (handle) => fetch(...))`
+- All prices are integers (cents) — format with `formatPrice()` utility
+- HTTP-only cookies for auth tokens — **never localStorage for auth**
+
+---
+
+## Product Card Pattern
+
+```tsx
+// Always use next/image with sizes attribute
+<Image
+  src={product.thumbnail}
+  alt={product.title}
+  fill
+  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+  priority={isAboveFold}
+/>
+```
+
+---
+
+## Cart Pattern
+
+```ts
+// Zustand store with HTTP-only cookie session
+// Only persist cartId in localStorage — never full cart data
+partialize: (state) => ({ cartId: state.cartId })
+```
+
+---
+
+## Payment Pattern
+
+- Always process payments via **Next.js API route** (server-side)
+- Create PaymentIntent server-side → return `clientSecret` to browser
+- Never expose `STRIPE_SECRET_KEY` to client
+
+---
+
+## Checkout Flow
+
+```
+/checkout/information → /checkout/delivery → /checkout/payment → /checkout/confirmation
+```
+- Each step validates before navigation
+- Session stored server-side (cookies)
+
+---
+
+## SEO Pattern
+
+Every page needs:
+1. `generateMetadata()` with title, description, canonical, OG tags
+2. `<ProductStructuredData />` on PDPs (JSON-LD schema)
+3. `app/sitemap.ts` for all product/collection URLs
+4. `app/robots.ts` blocking `/account/`, `/checkout/`, `/api/`
+
+---
+
+## Performance Rules
+
+- Above-fold images: `priority` + `fetchPriority="high"`
+- Below-fold images: `loading="lazy"` (default)
+- Heavy components: `dynamic(() => import(...))` with loading skeleton
+- Fonts: `next/font/google` with `display: "swap"`
+- Revalidation: ISR with cache tags + on-demand purge webhook
+
+---
+
+## Anti-Patterns (Never Do These)
+
+❌ Don't use `<img>` — always `next/image`  
+❌ Don't fetch in `useEffect` for initial data — use RSC  
+❌ Don't store auth tokens in localStorage — HTTP-only cookies only  
+❌ Don't process payments client-side — always via API route  
+❌ Don't use `any` TypeScript type — use proper interfaces  
+❌ Don't skip loading/error states  
+❌ Don't hardcode currency or prices  
+❌ Don't fetch sequentially when parallel is possible  
+
+---
+
+## Example Prompts You Respond To
+
+- "Create a product listing page with filters and pagination"
+- "Build a cart drawer with quantity controls"
+- "Add a multi-step checkout with Stripe"
+- "Create customer login with HTTP-only cookie auth"
+- "Optimize the PDP for Core Web Vitals"
+- "Add JSON-LD product structured data"
