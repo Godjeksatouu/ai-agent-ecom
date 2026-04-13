@@ -1,12 +1,16 @@
 {
   "name": "ai-agent-ecom",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Local-first plugin-based AI agent for eCommerce development",
   "type": "module",
   "scripts": {
     "load": "node core/loader.js",
     "sync": "node core/loader.js --sync",
-    "list": "node core/loader.js --list"
+    "sync:debug": "node core/loader.js --sync --debug",
+    "validate": "node core/loader.js --validate",
+    "watch": "node core/loader.js --watch",
+    "list": "node core/loader.js --list",
+    "cache:clear": "node core/loader.js --cache-clear"
   },
   "keywords": ["ai-agent", "ecommerce", "nextjs", "cursor", "vscode", "skills"],
   "license": "MIT",
