@@ -1,304 +1,117 @@
-# Skill: API Integration
+# Skill: Mock API Integration (Offline-First)
 
 ## Role
-You implement robust, type-safe API integration layers for Next.js eCommerce storefronts. The API layer abstracts backend communication and handles errors consistently.
+You implement a **frontend-only, zero-backend** API integration layer for Next.js eCommerce storefronts. This approach uses local JSON files as the single source of truth, removing all dependencies on MongoDB or external APIs during development.
 
 ---
 
-## API Client Architecture
+## Zero-Backend Architecture
 
 ```
-Storefront → lib/api/ → Backend API (Medusa / Custom)
-                ↓
-         Type-safe functions
-         Error handling
-         Auth headers
-         Cache control
+Storefront → lib/api/ → Local JSON Data (/data/*.json)
+                 ↓
+          Synchronous / Mock-Async functions
+          No API Errors (offline reliable)
+          Instant rendering
 ```
 
 ---
 
-## Base API Client
+## Mock API Strategy
+
+### 1. Unified Mock Client
+Instead of making `fetch` calls, import JSON data directly into your API functions.
 
 ```ts
 // lib/api/client.ts
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:9000"
-
-interface RequestOptions extends RequestInit {
-  tags?: string[]
-  revalidate?: number | false
-}
-
-export class APIError extends Error {
-  constructor(
-    public status: number,
-    public message: string,
-    public code?: string
-  ) {
-    super(message)
-    this.name = "APIError"
-  }
-}
-
-export async function apiRequest<T>(
-  path: string,
-  options: RequestOptions = {}
-): Promise<T> {
-  const { tags, revalidate, ...fetchOptions } = options
-
-  const headers = new Headers(fetchOptions.headers)
-  headers.set("Content-Type", "application/json")
-
-  // Add auth cookie passthrough for server components
-  if (typeof window === "undefined") {
-    const { cookies } = await import("next/headers")
-    const cookieStore = cookies()
-    const token = cookieStore.get("_session_token")?.value
-    if (token) headers.set("Authorization", `Bearer ${token}`)
-  }
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...fetchOptions,
-    headers,
-    next: {
-      ...(tags && { tags }),
-      ...(revalidate !== undefined && { revalidate }),
-    },
-  })
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new APIError(res.status, body.message ?? res.statusText, body.code)
-  }
-
-  return res.json() as Promise<T>
+// In mock mode, the 'client' just provides a standard interface
+export async function mockDelay(ms = 100) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 ```
 
----
-
-## Products API
+### 2. Products API (JSON-Backed)
 
 ```ts
 // lib/api/products.ts
-import { cache } from "react"
-import { apiRequest } from "./client"
+import productsData from "@/data/products.json"
 import type { Product } from "@/types/product"
 
-interface ProductListParams {
-  limit?: number
-  offset?: number
-  collection_id?: string[]
-  tags?: string[]
-  sort?: string
-  q?: string
+export async function getProducts() {
+  // Simulate network delay for realistic UI behavior
+  await new Promise(r => setTimeout(r, 200))
+  return productsData as Product[]
 }
 
-interface ProductListResponse {
-  products: Product[]
-  count: number
-  offset: number
-  limit: number
+export async function getProduct(handle: string) {
+  const products = await getProducts()
+  return products.find(p => p.handle === handle) ?? null
 }
 
-export const getProducts = cache(async (params: ProductListParams = {}): Promise<Product[]> => {
-  const query = new URLSearchParams()
-  if (params.limit) query.set("limit", String(params.limit))
-  if (params.offset) query.set("offset", String(params.offset))
-  if (params.q) query.set("q", params.q)
-  if (params.sort) query.set("order", params.sort)
-  if (params.collection_id?.length) {
-    params.collection_id.forEach(id => query.append("collection_id[]", id))
-  }
-
-  const { products } = await apiRequest<ProductListResponse>(
-    `/store/products?${query.toString()}`,
-    { tags: ["products"], revalidate: 60 }
-  )
-  return products
-})
-
-export const getProduct = cache(async (handle: string): Promise<Product | null> => {
-  try {
-    const { product } = await apiRequest<{ product: Product }>(
-      `/store/products?handle=${handle}`,
-      { tags: [`product-${handle}`, "products"], revalidate: 60 }
-    ).then(res => ({ product: (res as { products: Product[] }).products[0] ?? null }))
-    return product
-  } catch {
-    return null
-  }
-})
+export async function getFeaturedProducts() {
+  const products = await getProducts()
+  return products.slice(0, 4)
+}
 ```
 
----
-
-## Cart API
+### 3. Cart API (Local Management)
 
 ```ts
 // lib/api/cart.ts
-import { apiRequest } from "./client"
-import type { Cart } from "@/types/cart"
-
-export async function createCart(): Promise<Cart> {
-  const { cart } = await apiRequest<{ cart: Cart }>("/store/carts", {
-    method: "POST",
-    body: JSON.stringify({}),
-  })
-  return cart
-}
-
-export async function getCart(cartId: string): Promise<Cart | null> {
-  try {
-    const { cart } = await apiRequest<{ cart: Cart }>(`/store/carts/${cartId}`, {
-      cache: "no-store", // Always fresh
-    })
-    return cart
-  } catch {
-    return null
-  }
-}
-
-export async function addLineItem(
-  cartId: string,
-  params: { variantId: string; quantity: number }
-): Promise<Cart> {
-  const { cart } = await apiRequest<{ cart: Cart }>(
-    `/store/carts/${cartId}/line-items`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        variant_id: params.variantId,
-        quantity: params.quantity,
-      }),
-    }
-  )
-  return cart
-}
-
-export async function removeLineItem(cartId: string, lineItemId: string): Promise<Cart> {
-  const { cart } = await apiRequest<{ cart: Cart }>(
-    `/store/carts/${cartId}/line-items/${lineItemId}`,
-    { method: "DELETE" }
-  )
-  return cart
-}
-
-export async function updateLineItem(
-  cartId: string,
-  lineItemId: string,
-  params: { quantity: number }
-): Promise<Cart> {
-  const { cart } = await apiRequest<{ cart: Cart }>(
-    `/store/carts/${cartId}/line-items/${lineItemId}`,
-    {
-      method: "POST",
-      body: JSON.stringify(params),
-    }
-  )
-  return cart
-}
+// In a zero-backend system, the cart is usually handled 
+// purely by the Zustand store (see useCart store reference).
 ```
 
 ---
 
-## Data Fetching Patterns
+## Data Structure (/data Folder)
 
-### Pattern 1: Parallel Fetching (Best for Pages)
-```ts
-// Always fetch in parallel — never sequentially
-const [product, recommendations, inventory] = await Promise.all([
-  getProduct(handle),
-  getRelatedProducts(handle, { limit: 4 }),
-  getInventoryStatus(handle),
-])
+The `/data` folder contains the project's state. AI should generate these files during scaffolding.
+
+### products.json
+```json
+[
+  {
+    "id": "1",
+    "handle": "clean-code",
+    "title": "Clean Code",
+    "price": 2999,
+    "image": "/images/clean-code.jpg",
+    "category": "Programming"
+  }
+]
 ```
 
-### Pattern 2: Error-First Design
-```ts
-// lib/api/safe-fetch.ts
-export async function safeFetch<T>(
-  fn: () => Promise<T>,
-  fallback: T
-): Promise<T> {
-  try {
-    return await fn()
-  } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[API Error]", err)
-    }
-    return fallback
+### users.json
+```json
+[
+  {
+    "id": "u1",
+    "name": "Test User",
+    "email": "test@example.com"
   }
-}
-
-// Usage:
-const products = await safeFetch(() => getProducts({ limit: 8 }), [])
-```
-
-### Pattern 3: SWR for Client-Side Mutations
-```ts
-// For real-time data that needs to stay fresh on the client
-import useSWR from "swr"
-
-const fetcher = (url: string) => fetch(url).then(r => r.json())
-
-export function useWishlist() {
-  const { data, mutate, isLoading } = useSWR("/api/wishlist", fetcher)
-
-  const addToWishlist = async (productId: string) => {
-    await mutate(
-      fetch("/api/wishlist", {
-        method: "POST",
-        body: JSON.stringify({ productId }),
-      }).then(r => r.json()),
-      { optimisticData: [...(data ?? []), { productId }] }
-    )
-  }
-
-  return { items: data ?? [], addToWishlist, isLoading }
-}
+]
 ```
 
 ---
 
-## Price Utility
+## Benefits of JSON-Only Development
 
-```ts
-// lib/utils/price.ts
-import type { Money } from "@/types/product"
-
-const formatters = new Map<string, Intl.NumberFormat>()
-
-export function formatPrice(money: Money | undefined | null): string {
-  if (!money) return ""
-
-  const key = money.currency_code
-  if (!formatters.has(key)) {
-    formatters.set(
-      key,
-      new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: money.currency_code,
-        minimumFractionDigits: 2,
-      })
-    )
-  }
-
-  // Prices stored as integers in smallest unit (cents)
-  return formatters.get(key)!.format(money.amount / 100)
-}
-
-export function calculateDiscount(original: number, sale: number): number {
-  return Math.round(((original - sale) / original) * 100)
-}
-```
+1.  **Instant Start**: Developers only need `npm install` and `npm run dev`. No database setup required.
+2.  **Offline Compatibility**: Works without internet or local server instances.
+3.  **Deterministic UI**: No random API failures during development/testing.
+4.  **Simpler Scaffolding**: Agent doesn't need to write complex Prisma/Mongoose schemas.
 
 ---
 
-## Anti-Patterns
+## Transitioning to Real API (Optional)
+When the user is ready for a real backend, only the `lib/api/` and `lib/store/` files need to be swapped for real `fetch` calls. The UI components remain unchanged as they consume the same TypeScript interfaces.
 
-❌ Never fetch in `useEffect` for initial page data — use RSC  
-❌ Never expose API keys or secret tokens to the client  
-❌ Never swallow errors silently — always log and handle  
-❌ Never fetch sequentially when parallel is possible  
-❌ Never hardcode prices or currency in UI strings  
+---
+
+## Anti-Patterns to Avoid
+
+❌ **Never use MongoDB/Mongoose** unless specifically asked for a production backend.  
+❌ **Never write complex API routes** for basic CRUD if JSON mocking suffices.  
+❌ **Never skip Type Safety** even when using JSON — always cast with `as Product[]`.  
+❌ **Never hardcode data** directly in `.tsx` files — always centralize in `/data/*.json`.  

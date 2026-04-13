@@ -1,0 +1,90 @@
+[
+  {
+    "id": "1",
+    "handle": "clean-code",
+    "title": "Clean Code",
+    "price": 2999,
+    "currency_code": "USD",
+    "category": "Programming",
+    "image": "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?auto=format&fit=crop&q=80&w=800",
+    "description": "A guide to writing clean and maintainable code by Robert C. Martin.",
+    "rating": 4.8,
+    "stock": 10,
+    "variants": [
+      {
+        "id": "v1",
+        "title": "Paperback",
+        "sku": "BK-CC-PB",
+        "price": { "amount": 2999, "currency_code": "USD" },
+        "inventory_quantity": 10,
+        "options": []
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "handle": "the-pragmatic-programmer",
+    "title": "The Pragmatic Programmer",
+    "price": 3499,
+    "currency_code": "USD",
+    "category": "Programming",
+    "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800",
+    "description": "Your journey to mastery in software development.",
+    "rating": 4.9,
+    "stock": 15,
+    "variants": [
+      {
+        "id": "v2",
+        "title": "Hardcover",
+        "sku": "BK-PP-HC",
+        "price": { "amount": 3499, "currency_code": "USD" },
+        "inventory_quantity": 15,
+        "options": []
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "handle": "design-patterns",
+    "title": "Design Patterns",
+    "price": 4999,
+    "currency_code": "USD",
+    "category": "Programming",
+    "image": "https://images.unsplash.com/photo-1509395062183-67c5ad6faff9?auto=format&fit=crop&q=80&w=800",
+    "description": "Elements of Reusable Object-Oriented Software.",
+    "rating": 4.7,
+    "stock": 5,
+    "variants": [
+      {
+        "id": "v3",
+        "title": "Standard",
+        "sku": "BK-DP-ST",
+        "price": { "amount": 4999, "currency_code": "USD" },
+        "inventory_quantity": 5,
+        "options": []
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "handle": "refactoring",
+    "title": "Refactoring",
+    "price": 3999,
+    "currency_code": "USD",
+    "category": "Programming",
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800",
+    "description": "Improving the Design of Existing Code.",
+    "rating": 4.8,
+    "stock": 8,
+    "variants": [
+      {
+        "id": "v4",
+        "title": "E-book",
+        "sku": "BK-RF-EB",
+        "price": { "amount": 3999, "currency_code": "USD" },
+        "inventory_quantity": 8,
+        "options": []
+      }
+    ]
+  }
+]

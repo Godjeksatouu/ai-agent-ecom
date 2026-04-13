@@ -1,7 +1,7 @@
 # Skill: eCommerce Storefront Architecture (v2.2)
 
 ## Role
-You are an expert Next.js eCommerce architect. You build **high-conversion, premium storefronts** using a minimal design system, TailwindCSS, and a modular component architecture.
+You are an expert Next.js eCommerce architect. You build **high-conversion, premium storefronts** using a minimal design system, TailwindCSS, and a **zero-backend architecture** powered by local JSON data.
 
 ---
 
@@ -15,13 +15,43 @@ You are an expert Next.js eCommerce architect. You build **high-conversion, prem
 
 ---
 
+## Project Structure (Zero-Backend)
+
+The project is designed to run instantly without a database or external API.
+
+```
+storefront/
+├── app/                        # Next.js App Router
+├── components/                 # UI, Ecommerce, Sections, Layout
+├── data/                       # Single Source of Truth (JSON mocks)
+│   ├── products.json           # All book/product data
+│   └── users.json              # Mock users for dev
+├── lib/                        # Business Logic
+│   ├── api/                    # JSON-backed data fetchers
+│   ├── store/                  # Zustand (Cart, UI state)
+│   └── utils/                  # Price formatters, etc.
+└── animations/                 # Motion design system
+```
+
+---
+
+## Technical Performance Rules
+
+- **Offline-First**: Use local JSON imports in `lib/api/` for development.
+- **Zero CLS**: Images must have predefined aspect ratios (e.g., `aspect-[4/5]`).
+- **WebP/AVIF Support**: Use Next.js `Image` component.
+- **Lazy Loading**: All components below the fold must use `loading="lazy"`.
+- **RSC Optimized**: Fetch JSON data in Server Components for instant rendering.
+
+---
+
 ## Layout Hierarchy (Page Structure)
 
 Every store page should follow this structural pattern for maximum conversion:
 
 ### A. Navbar (Global)
-- **Left**: Brand Logo (Vector/Minimal).
-- **Center**: Primary Navigation (Flexbox, centered/left).
+- **Left**: Brand Logo (Minimal).
+- **Center**: Primary Navigation.
 - **Right**: Search, User, Cart (Icons + badges).
 - **Style**: Sticky with `backdrop-blur-lg` on scroll.
 
@@ -29,74 +59,18 @@ Every store page should follow this structural pattern for maximum conversion:
 - **Layout**: 2-column CSS Grid.
 - **Left**: Headline (H1), Description, Primary & Secondary CTAs.
 - **Right**: High-quality lifestyle visual or interactive product.
-- **Trust Elements**: Small status cards (e.g., "5k+ Happy Customers").
 
-### C. Collections Grid
-- **Layout**: 3-column grid or Horizontal scroll (`flex overflow-x-auto`).
-- **Component**: `CategoryCard` (Aspect-ratio driven).
-
-### D. Product Main Grid
+### C. Product Main Grid
 - **Layout**: 
   - Desktop: 4 columns.
-  - Mobile: 1-2 columns.
+  - Mobile: 1 column.
 - **Component**: `ProductCard` (Lazy-loaded images).
 
-### E. Promo / Newsletter Banner
-- **Layout**: Full-width or boxed split layout.
-- **Focus**: Single strong CTA (Discount/Offer).
-
-### F. Footer (Global)
-- **Layout**: 4-12 column CSS grid.
-- **Groups**: Shop, Help, Company, Newsletter.
-
 ---
 
-## Component Organization
+## Anti-Patterns to Avoid
 
-```
-components/
-├── ui/                 # Atomic: Button, Input, Badge
-├── ecommerce/          # Domain: ProductCard, CategoryCard, CartItem
-├── sections/           # Large: Hero, Banner, FeaturedRow
-└── layout/             # Global: Navbar, Footer, StoreLayout
-```
-
----
-
-## Technical Performance Rules
-
-- **Zero CLS**: Images must have predefined aspect ratios (e.g., `aspect-[4/5]`).
-- **WebP/AVIF Support**: Use Next.js `Image` component.
-- **Lazy Loading**: All components below the fold must use `loading="lazy"`.
-- **Server Components**: 90% of the UI should be RSC. Only interactive elements are Client Components.
-
----
-
-## Example Composition
-
-```tsx
-// app/(store)/page.tsx
-import { Hero } from "@/components/sections/Hero"
-import { ProductGrid } from "@/components/ecommerce/ProductGrid"
-import { Banner } from "@/components/sections/Banner"
-
-export default async function HomePage() {
-  const products = await getFeaturedProducts()
-  
-  return (
-    <div className="space-y-20 lg:space-y-32">
-      <Hero />
-      <section className="container mx-auto px-4">
-        <h2 className="mb-12 text-3xl font-bold tracking-tight">Best Sellers</h2>
-        <ProductGrid products={products} />
-      </section>
-      <Banner 
-        title="Experience the Collection" 
-        description="Get 15% off your first order."
-        ctaText="Join Now"
-        ctaHref="/register"
-      />
-    </div>
-  )
-}
-```
+❌ **No Database Required**: Do not generate Prisma, MongoDB, or Mongoose code for development.  
+❌ **No External API**: Do not rely on external endpoints for initial rendering. High-conversion stores must be resilient.  
+❌ **No Layout Shift**: Never omit `width` and `height` (or `aspect-ratio`) on product images.  
+❌ **No Sequential Fetching**: Even when fetching from JSON, use `Promise.all` for parallel data resolution.  
