@@ -1,11 +1,12 @@
 // components/ui/Button.tsx
 import { forwardRef } from "react"
-import type { ButtonHTMLAttributes } from "react"
+import { motion, HTMLMotionProps } from "framer-motion"
+import { variants } from "@/animations/variants"
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger"
 type ButtonSize = "sm" | "md" | "lg"
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends HTMLMotionProps<"button"> {
   variant?: ButtonVariant
   size?: ButtonSize
   isLoading?: boolean
@@ -23,9 +24,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   ...props
 }, ref) => {
   return (
-    <button
+    <motion.button
       ref={ref}
       disabled={disabled || isLoading}
+      variants={variants.buttonPress}
+      whileHover="hover"
+      whileTap="tap"
       className={[
         "btn",
         `btn--${variant}`,
@@ -41,7 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       <span className={isLoading ? "btn__label btn__label--hidden" : "btn__label"}>
         {children}
       </span>
-    </button>
+    </motion.button>
   )
 })
 Button.displayName = "Button"

@@ -57,6 +57,14 @@
       "triggers": ["api", "fetch", "data fetching", "endpoint", "client", "price", "currency"]
     },
     {
+      "id": "anti-patterns",
+      "file": "skills/07-anti-patterns.md",
+      "description": "Anti-pattern detection and self-critique rules for production output",
+      "priority": 7,
+      "tags": ["quality", "anti-patterns", "review", "critique"],
+      "triggers": ["review", "quality", "check", "critique", "best practice"]
+    },
+    {
       "id": "animations",
       "file": "skills/08-animations.md",
       "description": "High-performance UI animations and motion design patterns",

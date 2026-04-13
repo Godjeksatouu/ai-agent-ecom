@@ -53,6 +53,11 @@ storefront/
 │   └── utils/                      # Formatters, helpers
 ├── types/                          # TypeScript type definitions
 ├── styles/                         # Global CSS + design tokens
+├── animations/                       # Shared motion design system
+│   ├── presets/                    # Atomic animations
+│   ├── variants.ts                 # Reusable Framer Motion variants
+│   ├── config.ts                    # Timing and easing tokens
+│   └── motion-provider.tsx          # Client-side motion context
 └── public/                         # Static assets
 ```
 
