@@ -270,6 +270,30 @@
         "checkoutservice",
         "userservice"
       ]
+    },
+    {
+      "id": "enterprise-commerce-engine",
+      "file": "skills/13-enterprise-commerce-engine.md",
+      "description": "Upgrade to a MedusaJS-style scalable plugin engine, enforcing modular separation and robust full-stack API simulations",
+      "priority": 13,
+      "tags": [
+        "commerce",
+        "medusa",
+        "engine",
+        "plugin",
+        "latency",
+        "cache",
+        "error-handling"
+      ],
+      "triggers": [
+        "engine",
+        "medusa",
+        "plugin system",
+        "latency",
+        "mock",
+        "simulate backend",
+        "production-grade"
+      ]
     }
   ],
   "reference": [
