@@ -5,112 +5,225 @@
   "description": "Expert-level skills for building production-grade Next.js eCommerce storefronts",
   "author": "AI Agent eCommerce",
   "category": "storefront",
-  "tags": ["nextjs", "react", "ecommerce", "storefront", "typescript"],
+  "tags": [
+    "nextjs",
+    "react",
+    "ecommerce",
+    "storefront",
+    "typescript"
+  ],
   "dependencies": [],
   "skills": [
     {
-      "id": "storefront-architecture",
-      "file": "skills/01-architecture.md",
-      "description": "Next.js storefront architecture, routing, and project structure",
+      "id": "core-architecture",
+      "file": "skills/00-core-architecture.md",
+      "description": "Single source of truth: Structured Reasoning, Architecture, Design System, Conversion Rules, and Data Handling",
       "priority": 1,
-      "tags": ["architecture", "routing", "structure"],
-      "triggers": ["architecture", "project structure", "routing", "app router", "folder"]
+      "tags": [
+        "core",
+        "architecture",
+        "design-system",
+        "reasoning",
+        "performance"
+      ],
+      "triggers": [
+        "architecture",
+        "design",
+        "reasoning",
+        "performance",
+        "system",
+        "ui"
+      ]
     },
     {
       "id": "product-components",
       "file": "skills/02-product-components.md",
       "description": "Product listing, detail pages, and UI components",
       "priority": 2,
-      "tags": ["product", "components", "ui", "pdp"],
-      "triggers": ["product card", "product list", "pdp", "gallery", "variant", "product detail"]
+      "tags": [
+        "product",
+        "components",
+        "ui",
+        "pdp"
+      ],
+      "triggers": [
+        "product card",
+        "product list",
+        "pdp",
+        "gallery",
+        "variant",
+        "product detail"
+      ]
     },
     {
       "id": "cart-checkout",
       "file": "skills/03-cart-checkout.md",
       "description": "Cart state management, checkout flows, and payment integration",
       "priority": 3,
-      "tags": ["cart", "checkout", "payment", "zustand"],
-      "triggers": ["cart", "checkout", "payment", "stripe", "order", "line item"]
+      "tags": [
+        "cart",
+        "checkout",
+        "payment",
+        "zustand"
+      ],
+      "triggers": [
+        "cart",
+        "checkout",
+        "payment",
+        "stripe",
+        "order",
+        "line item"
+      ]
     },
     {
       "id": "performance-seo",
       "file": "skills/04-performance-seo.md",
       "description": "Performance optimization and SEO best practices for storefronts",
       "priority": 4,
-      "tags": ["performance", "seo", "cwv", "image", "isr"],
-      "triggers": ["performance", "seo", "image", "lcp", "sitemap", "metadata", "json-ld"]
+      "tags": [
+        "performance",
+        "seo",
+        "cwv",
+        "image",
+        "isr"
+      ],
+      "triggers": [
+        "performance",
+        "seo",
+        "image",
+        "lcp",
+        "sitemap",
+        "metadata",
+        "json-ld"
+      ]
     },
     {
       "id": "auth-accounts",
       "file": "skills/05-auth-accounts.md",
       "description": "Authentication, customer accounts, and order history",
       "priority": 5,
-      "tags": ["auth", "login", "accounts", "session", "cookie"],
-      "triggers": ["auth", "login", "register", "session", "customer", "account", "cookie"]
+      "tags": [
+        "auth",
+        "login",
+        "accounts",
+        "session",
+        "cookie"
+      ],
+      "triggers": [
+        "auth",
+        "login",
+        "register",
+        "session",
+        "customer",
+        "account",
+        "cookie"
+      ]
     },
     {
       "id": "api-integration",
       "file": "skills/06-api-integration.md",
       "description": "Backend API integration patterns and data fetching strategies",
       "priority": 6,
-      "tags": ["api", "fetch", "client", "data", "cache"],
-      "triggers": ["api", "fetch", "data fetching", "endpoint", "client", "price", "currency"]
+      "tags": [
+        "api",
+        "fetch",
+        "client",
+        "data",
+        "cache"
+      ],
+      "triggers": [
+        "api",
+        "fetch",
+        "data fetching",
+        "endpoint",
+        "client",
+        "price",
+        "currency"
+      ]
     },
     {
       "id": "anti-patterns",
       "file": "skills/07-anti-patterns.md",
       "description": "Anti-pattern detection and self-critique rules for production output",
       "priority": 7,
-      "tags": ["quality", "anti-patterns", "review", "critique"],
-      "triggers": ["review", "quality", "check", "critique", "best practice"]
+      "tags": [
+        "quality",
+        "anti-patterns",
+        "review",
+        "critique"
+      ],
+      "triggers": [
+        "review",
+        "quality",
+        "check",
+        "critique",
+        "best practice"
+      ]
     },
     {
       "id": "animations",
       "file": "skills/08-animations.md",
       "description": "High-performance UI animations and motion design patterns",
       "priority": 8,
-      "tags": ["animations", "motion", "framer-motion", "ux"],
-      "triggers": ["animation", "motion", "framer motion", "transition", "slide", "fade", "hover"]
+      "tags": [
+        "animations",
+        "motion",
+        "framer-motion",
+        "ux"
+      ],
+      "triggers": [
+        "animation",
+        "motion",
+        "framer motion",
+        "transition",
+        "slide",
+        "fade",
+        "hover"
+      ]
     },
     {
       "id": "prompt-processing",
       "file": "skills/09-prompt-processing.md",
       "description": "Transform all user prompts into Caveman Style before processing to reduce token usage",
       "priority": 9,
-      "tags": ["prompt", "compression", "tokens", "efficiency", "caveman"],
-      "triggers": ["prompt", "understand", "process", "instruction", "caveman", "compress"]
+      "tags": [
+        "prompt",
+        "compression",
+        "tokens",
+        "efficiency",
+        "caveman"
+      ],
+      "triggers": [
+        "prompt",
+        "understand",
+        "process",
+        "instruction",
+        "caveman",
+        "compress"
+      ]
     },
     {
-      "id": "structured-reasoning",
-      "file": "skills/10-structured-reasoning.md",
-      "description": "Enforce structured reasoning: THINK -> PLAN -> EXECUTE -> REVIEW before generating code",
+      "id": "domain-driven-architecture",
+      "file": "skills/10-domain-driven-architecture.md",
+      "description": "Enforce strict Domain-Driven Architecture (DDD) mirroring MedusaJS core design",
       "priority": 10,
-      "tags": ["reasoning", "senior", "structure", "plan", "review"],
-      "triggers": ["reason", "think", "plan", "execute", "review", "senior", "engineer"]
-    },
-    {
-      "id": "conversion-ui",
-      "file": "skills/11-conversion-ui.md",
-      "description": "Ensure high-conversion eCommerce design with clear CTAs and product info",
-      "priority": 11,
-      "tags": ["ui", "conversion", "sales", "design", "cta"],
-      "triggers": ["ui", "design", "conversion", "sales", "button", "cta", "trust", "product"]
-    },
-    {
-      "id": "design-system",
-      "file": "skills/12-design-system.md",
-      "description": "Strict design system enforcement, Tailwind aesthetics, grid usage, and component standards",
-      "priority": 12,
-      "tags": ["design-system", "tailwind", "responsive", "grid", "components"],
-      "triggers": ["design", "system", "tailwind", "style", "grid", "responsive", "soft ui", "neutral"]
-    },
-    {
-      "id": "architecture-performance",
-      "file": "skills/13-architecture-performance.md",
-      "description": "Ensure production-grade data handling, next/image performance, and strict component architectures",
-      "priority": 13,
-      "tags": ["architecture", "performance", "data", "image", "cls"],
-      "triggers": ["data", "json", "performance", "image", "cls", "architecture", "productcard", "hero"]
+      "tags": [
+        "ddd",
+        "architecture",
+        "domains",
+        "isolation",
+        "business-logic"
+      ],
+      "triggers": [
+        "domain",
+        "ddd",
+        "business logic",
+        "catalog",
+        "cart",
+        "checkout",
+        "promotions",
+        "users"
+      ]
     }
   ],
   "reference": [
@@ -133,13 +246,15 @@
   "cursorRules": ".cursor/rules/ecommerce-storefront.mdc",
   "validation": {
     "requiredSkillIds": [
-      "storefront-architecture",
+      "core-architecture",
       "product-components",
       "cart-checkout",
       "animations",
       "anti-patterns"
     ],
-    "requiredReferenceIds": ["component-library"]
+    "requiredReferenceIds": [
+      "component-library"
+    ]
   },
   "modelHints": {
     "systemPromptAppend": "You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience. Before outputting any code, mentally apply the THINK → PLAN → EXECUTE → REVIEW → IMPROVE loop. Catch anti-patterns before they appear in output.",
@@ -147,6 +262,9 @@
     "preferStructured": true,
     "reasoningLoop": true,
     "selfCritiqueBeforeOutput": true,
-    "requiredDependencies": ["framer-motion"]
+    "requiredDependencies": [
+      "framer-motion"
+    ],
+    "conflictResolutionRule": "In case of skill overlap or conflict, the unified core-architecture.md holds absolute priority and its constraints cannot be overridden."
   }
 }

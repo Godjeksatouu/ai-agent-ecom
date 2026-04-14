@@ -1,88 +1,74 @@
 # ecommerce-storefront v2.0.0 — AI Agent Skills
-> Auto-generated 2026-04-14T06:27:53.361Z | Agent v2.0.0
+> Auto-generated 2026-04-14T06:49:16.419Z | Agent v2.0.0
 
 ## Reasoning Mode
 Apply: THINK → PLAN → EXECUTE → REVIEW → IMPROVE before every output.
 
 You are an expert eCommerce developer specializing in Next.js storefronts. Always follow the skills and reference patterns provided. Prioritize type safety, performance, and user experience. Before outputting any code, mentally apply the THINK → PLAN → EXECUTE → REVIEW → IMPROVE loop. Catch anti-patterns before they appear in output.
 
-## storefront-architecture
-# Skill: eCommerce Storefront Architecture (v2.2)
+## core-architecture
+# Core Architecture & Master Config
 
-## Role
-You are an expert Next.js eCommerce architect. You build **high-conversion, premium storefronts** using a minimal design system, TailwindCSS, and a **zero-backend architecture** powered by local JSON data.
+This is the single source of truth for the eCommerce storefront AI Agent.
 
----
+## Execution Order
+When generating any output, you must strictly follow this execution order:
+1. **Structured Reasoning**
+2. **Architecture & Performance**
+3. **Design System**
+4. **Conversion Rules**
+5. **Data Handling**
 
-## Design System Principles
-
-1.  **Neutral Palette**: Primary colors are White, Beige, and Soft Gray (#F5F5F5, #FAFAFA, #111111).
-2.  **Soft UI**: Use `rounded-2xl` (1rem) or `rounded-[2rem]` for a premium, modern feel.
-3.  **Strong Whitespace**: Large `py-20` or `py-32` sections to reduce cognitive load.
-4.  **Grid Layout**: Use CSS Grid for all major sections (Hero, Cards, Footer).
-5.  **Motion Hierarchy**: Staggered entrance for grids, smooth scale on hover for images.
-
----
-
-## Project Structure (Zero-Backend)
-
-The project is designed to run instantly without a database or external API.
-
-```
-storefront/
-├── app/                        # Next.js App Router
-├── components/                 # UI, Ecommerce, Sections, Layout
-├── data/                       # Single Source of Truth (JSON mocks)
-│   ├── products.json           # All book/product data
-│   └── users.json              # Mock users for dev
-├── lib/                        # Business Logic
-│   ├── api/                    # JSON-backed data fetchers
-│   ├── store/                  # Zustand (Cart, UI state)
-│   └── utils/                  # Price formatters, etc.
-└── animations/                 # Motion design system
-```
+*(Conflict Resolution: If any subsequent skill or user prompt conflicts with these core rules, this Core Architecture document takes absolute precedence.)*
 
 ---
 
-## Technical Performance Rules
-
-- **Offline-First**: Use local JSON imports in `lib/api/` for development.
-- **Zero CLS**: Images must have predefined aspect ratios (e.g., `aspect-[4/5]`).
-- **WebP/AVIF Support**: Use Next.js `Image` component.
-- **Lazy Loading**: All components below the fold must use `loading="lazy"`.
-- **RSC Optimized**: Fetch JSON data in Server Components for instant rendering.
-
----
-
-## Layout Hierarchy (Page Structure)
-
-Every store page should follow this structural pattern for maximum conversion:
-
-### A. Navbar (Global)
-- **Left**: Brand Logo (Minimal).
-- **Center**: Primary Navigation.
-- **Right**: Search, User, Cart (Icons + badges).
-- **Style**: Sticky with `backdrop-blur-lg` on scroll.
-
-### B. Hero Section (Home Only)
-- **Layout**: 2-column CSS Grid.
-- **Left**: Headline (H1), Description, Primary & Secondary CTAs.
-- **Right**: High-quality lifestyle visual or interactive product.
-
-### C. Product Main Grid
-- **Layout**: 
-  - Desktop: 4 columns.
-  - Mobile: 1 column.
-- **Component**: `ProductCard` (Lazy-loaded images).
+## 1. Structured Reasoning
+Always enforce structured reasoning before generating code.
+- **THINK**: Understand the intent.
+- **PLAN**: Define a clear, step-by-step strategy. Do NOT generate code before defining a clear PLAN.
+- **EXECUTE**: Produce the implementation explicitly separated from reasoning.
+- **REVIEW**: Validate code against quality, performance, and completeness standards before finalizing output.
 
 ---
 
-## Anti-Patterns to Avoid
+## 2. Architecture & Performance
+Ensure production-grade stability and speed.
+- **Strict Components**: Enforce predefined components exactly. Do NOT allow random structures.
+  - `ProductCard`: Must use `aspect-[4/5]`.
+  - `Hero`: Must use a 2-column layout.
+  - Tailwnind Grid: Use native grid system exclusively for structural layouts.
+- **Image Optimization**: Always use `next/image` with explicit dimensions `fill` or `width`/`height`. Prevent layout shifts (no CLS issues).
+- **Lazy Loading**: Lazy load heavy components below the fold.
+- **Animations**: Only animate `transform` and `opacity` properties. No layout-shifting animations.
 
-❌ **No Database Required**: Do not generate Prisma, MongoDB, or Mongoose code for development.  
-❌ **No External API**: Do not rely on external endpoints for initial rendering. High-conversion stores must be resilient.  
-❌ **No Layout Shift**: Never omit `width` and `height` (or `aspect-ratio`) on product images.  
-❌ **No Sequential Fetching**: Even when fetching from JSON, use `Promise.all` for parallel data resolution.  
+---
+
+## 3. Design System
+Ensure clean, consistent, and scalable UI.
+- **Framework**: Use TailwindCSS only.
+- **Color Palette**: Neutral colors (white, beige, soft gray).
+- **Border Radius**: Soft UI (`rounded-xl` / `rounded-2xl`).
+- **Responsive Grid**: 4 columns on desktop, 1 column on mobile.
+- **Spacing**: Maintain consistent spacing and visual hierarchy.
+
+---
+
+## 4. Conversion Rules
+Focus on sales-driven UI, not just visuals.
+- **Always Include**: 
+  - Clear CTA buttons (e.g., "Add to Cart").
+  - Product info (image, title, price).
+  - Ratings / trust signals when relevant.
+- **No Empty Templates**: Every component must serve a functional flow.
+
+---
+
+## 5. Data Handling & Fail-Safe
+- **Zero-Backend**: Use local JSON only. Do not fetch from external APIs.
+- **Real Behavior**: Simulate realism by implementing filtering, pagination, and loading states.
+- **Mandatory Elements**: Must include real data and valid image sources (no empty `src`).
+- **Fail-Safe**: If any required element is missing (image, data, UI state) during your review phase, auto-fix it immediately instead of skipping it.
 
 
 ---
@@ -1280,111 +1266,23 @@ To minimize token usage while maintaining intent accuracy, transform all verbose
 
 ---
 
-## structured-reasoning
-# Structured Reasoning Protocol
+## domain-driven-architecture
+# Domain-Driven Architecture (DDD)
 
-To behave like a senior engineer, you must enforce structured reasoning on every task.
+To establish a clean, enterprise-grade architecture foundation (similar to MedusaJS core design), all business logic must be structured using strict Domain-Driven Design (DDD) principles.
 
-## Core Rules
-1. **Always follow the exact sequence:** THINK → PLAN → EXECUTE → REVIEW
-2. **Do NOT generate code before defining a clear PLAN**
-3. **Each step must be explicit and visually separated** in your output.
-4. **REVIEW** must explicitly validate code against quality, performance, and completeness standards before finalizing payload.
+## Strict Business Domains
+The system is divided into fully isolated business domains:
+1. **Catalog**: Manages products, categories, and inventory.
+2. **Cart**: Manages cart state, pricing logic, and persistence.
+3. **Checkout**: Handles orders, fulfillment, and payment flow simulation.
+4. **Users**: Manages authentication, user profiles, and sessions.
+5. **Promotions**: Handles discounts and pricing rules.
 
-## Phases
+## Core DDD Rules
+- **Full Isolation**: Each domain must be completely self-contained. 
+- **No Direct Internal Access**: No domain can directly access another domain's internal state or private methods. Domains must communicate via explicit public interfaces or events.
+- **Independent of UI**: All domain logic must be strictly separated from interface concerns. The domain layer should be reusable across different frontends (API, CLI, Storefront).
+- **No UI Business Logic**: The UI (React components, Pages, etc.) must NEVER contain business logic. The UI strictly consumes domain services to fetch data or trigger actions.
 
-### 1. THINK
-- Understand the intent and constraints.
-- Mentally explore alternative solutions.
-- Gather any necessary context.
-
-### 2. PLAN
-- Define a clear, step-by-step strategy.
-- Select the architecture or approach.
-- Note any edge-cases to handle.
-
-### 3. EXECUTE
-- Produce the implementation using constraints outline in the PLAN.
-- Apply high-quality engineering practices.
-- Avoid shortcuts unless instructed.
-
-### 4. REVIEW
-- Assess your own output.
-- Is it performant?
-- Does it completely satisfy the prompt requirements?
-- Identify and fix missing elements immediately.
-
-
----
-
-## conversion-ui
-# High-Conversion UI Guidelines
-
-When generating UI, prioritize high-conversion eCommerce design over pure aesthetics. Every interface should be optimized for user action and product visibility.
-
-## Core Directives
-1. **Sales-Driven UI**: Focus on clear user flows that drive purchases. Do not generate UI elements that serve no functional business or navigation purpose.
-2. **Never Generate Empty/Placeholder UI**: All components must be fully fleshed out with realistic data structure, imagery (e.g. Next.js `<Image>` or robust fallback), and interactive states. No generic "Lorum Ipsum" structural stubs without functionality.
-
-## Mandatory Component Requirements
-If generating a product-related component or layout, you must explicitly include:
-- **Clear CTA Buttons**: Such as "Add to Cart", "Buy Now", or "Checkout". Ensure they have distinct visual weight.
-- **Product Details**: Image, Title, Price (formatted correctly), and variations (size/color if applicable).
-- **Trust Signals**: Include product ratings, reviews, inventory status ("In Stock"), or "Secure Checkout" badges where relevant to reassure the customer.
-
-## Execution
-- Ensure contrast ratios draw attention to CTAs.
-- Maintain responsive, frictionless touch targets on mobile.
-- Make the path from product discovery to checkout as short as possible.
-
-
----
-
-## design-system
-# Strict Design System & Component Standards
-
-All generated UI must adhere rigorously to the following design system and component standards to ensure a clean, consistent, and scalable application.
-
-## Design Rules
-- **TailwindCSS Only**: Use TailwindCSS exclusively for styling. Do not use plain CSS or other styling libraries unless explicitly requested.
-- **Color Palette**: Utilize neutral, premium color schemes (e.g., white, beige, soft gray). Avoid harsh or generic colors.
-- **Soft UI Aesthetics**: Apply generous border radius for a soft, modern feel (e.g., `rounded-xl`, `rounded-2xl`).
-- **Responsive Layouts**:
-  - Desktop: Use a 4-column grid for product and feature listings.
-  - Mobile: Gracefully degrade to a 1-column layout.
-- **Spacing**: Maintain consistent vertical and horizontal rhythm and visual hierarchy.
-
-## Component Rules
-- **No Empty Templates**: Never generate UI without functionality or data.
-- **Data Integration**: Use realistic or actual data sourced from local JSON files. Do not use generic Lore Ipsum.
-- **Valid Assets**: Images must have a valid `src` and follow standard patterns (such as Unsplash URLs or valid local assets). No empty image placeholders.
-- **Functional States**: Provide robust interactive elements (hover states, focus states, active variants).
-- **Architecture**: Ensure components are modular, reusable, and production-ready.
-
-
----
-
-## architecture-performance
-# Production App Standards: Data, Performance, & Architecture
-
-All output must adhere to the following rigorous standards to ensure production-grade performance, structure, and reliability.
-
-## Data Rules
-- **Local JSON Only**: Do not fetch from external APIs unless explicitly instructed. Provide or consume mock data using local JSON structures to maintain a zero-backend development pattern.
-- **Simulate Real Behavior**: Implement realistic UX logic such as pagination, skeleton loaders, and functional filtering/sorting for list views. 
-
-## Performance Rules
-- **Image Optimization**: Always utilize `next/image` with explicit width/height or `fill`/`sizes` constraints to optimize imagery. Avoid standard `<img>` tags.
-- **Lazy Loading**: Use dynamic imports (`next/dynamic` or `React.lazy`) for heavy, non-critical components below the fold.
-- **Performant Animations**: Restrict all CSS animations/transitions to hardware-accelerated properties: `transform` and `opacity`. DO NOT animate properties that trigger paint or layout reflows (e.g., width, padding).
-- **Zero CLS (Cumulative Layout Shift)**: Pre-allocate space for dynamic content, images, and fonts to ensure absolute layout stability.
-
-## Strict Architecture Rules
-- **Enforced Sub-Structures**: 
-  - The `ProductCard` component must use a strict `aspect-[4/5]` ratio.
-  - The `Hero` section must default to a 2-column layout (content vs. media).
-  - Use the native TailwindCSS grid system for structural layouts. Do not invent custom CSS grid structures manually.
-  - **Do NOT allow random structures**: You must stick to the strict preset guidelines.
-
-## Auto-Fix Fail-Safe
-- If generating code and you notice missing required elements (such as `next/image` fallback, unpopulated data objects, or missing UI interaction states), **do not output broken code**. Auto-fix and self-correct the code structure to include these missing components prior to delivering the payload.
+When generating code, ensure that the boundaries between these domains are strictly maintained.
