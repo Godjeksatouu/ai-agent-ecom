@@ -71,6 +71,14 @@
       "priority": 8,
       "tags": ["animations", "motion", "framer-motion", "ux"],
       "triggers": ["animation", "motion", "framer motion", "transition", "slide", "fade", "hover"]
+    },
+    {
+      "id": "prompt-processing",
+      "file": "skills/09-prompt-processing.md",
+      "description": "Transform all user prompts into Caveman Style before processing to reduce token usage",
+      "priority": 9,
+      "tags": ["prompt", "compression", "tokens", "efficiency", "caveman"],
+      "triggers": ["prompt", "understand", "process", "instruction", "caveman", "compress"]
     }
   ],
   "reference": [
