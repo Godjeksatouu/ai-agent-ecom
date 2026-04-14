@@ -224,6 +224,29 @@
         "promotions",
         "users"
       ]
+    },
+    {
+      "id": "event-driven-architecture",
+      "file": "skills/11-event-driven-architecture.md",
+      "description": "Strict internal Event-Driven Architecture layer to decouple UI from business logic",
+      "priority": 11,
+      "tags": [
+        "events",
+        "eda",
+        "architecture",
+        "decoupling",
+        "state",
+        "simulation"
+      ],
+      "triggers": [
+        "event",
+        "emit",
+        "dispatch",
+        "event-driven",
+        "eda",
+        "decouple",
+        "state mutation"
+      ]
     }
   ],
   "reference": [
