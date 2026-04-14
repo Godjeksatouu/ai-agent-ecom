@@ -95,6 +95,14 @@
       "priority": 11,
       "tags": ["ui", "conversion", "sales", "design", "cta"],
       "triggers": ["ui", "design", "conversion", "sales", "button", "cta", "trust", "product"]
+    },
+    {
+      "id": "design-system",
+      "file": "skills/12-design-system.md",
+      "description": "Strict design system enforcement, Tailwind aesthetics, grid usage, and component standards",
+      "priority": 12,
+      "tags": ["design-system", "tailwind", "responsive", "grid", "components"],
+      "triggers": ["design", "system", "tailwind", "style", "grid", "responsive", "soft ui", "neutral"]
     }
   ],
   "reference": [
