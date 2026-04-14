@@ -8,7 +8,7 @@
   "settings": {
     "skillsDir": "./plugins",
     "contextOutputDir": "./.cursor/rules",
-    "maxSkillsPerContext": 10,
+    "maxSkillsPerContext": 15,
     "includeReference": true,
     "verboseLoader": false,
     "cache": {

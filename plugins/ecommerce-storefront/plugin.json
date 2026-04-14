@@ -87,6 +87,14 @@
       "priority": 10,
       "tags": ["reasoning", "senior", "structure", "plan", "review"],
       "triggers": ["reason", "think", "plan", "execute", "review", "senior", "engineer"]
+    },
+    {
+      "id": "conversion-ui",
+      "file": "skills/11-conversion-ui.md",
+      "description": "Ensure high-conversion eCommerce design with clear CTAs and product info",
+      "priority": 11,
+      "tags": ["ui", "conversion", "sales", "design", "cta"],
+      "triggers": ["ui", "design", "conversion", "sales", "button", "cta", "trust", "product"]
     }
   ],
   "reference": [
