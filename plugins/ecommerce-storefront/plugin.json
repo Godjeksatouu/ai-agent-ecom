@@ -103,6 +103,14 @@
       "priority": 12,
       "tags": ["design-system", "tailwind", "responsive", "grid", "components"],
       "triggers": ["design", "system", "tailwind", "style", "grid", "responsive", "soft ui", "neutral"]
+    },
+    {
+      "id": "architecture-performance",
+      "file": "skills/13-architecture-performance.md",
+      "description": "Ensure production-grade data handling, next/image performance, and strict component architectures",
+      "priority": 13,
+      "tags": ["architecture", "performance", "data", "image", "cls"],
+      "triggers": ["data", "json", "performance", "image", "cls", "architecture", "productcard", "hero"]
     }
   ],
   "reference": [
