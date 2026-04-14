@@ -247,6 +247,29 @@
         "decouple",
         "state mutation"
       ]
+    },
+    {
+      "id": "service-layer-abstraction",
+      "file": "skills/12-service-layer-abstraction.md",
+      "description": "Simulate real backend API architecture using a strict frontend Service Layer abstraction",
+      "priority": 12,
+      "tags": [
+        "service",
+        "architecture",
+        "abstraction",
+        "backend",
+        "data"
+      ],
+      "triggers": [
+        "service",
+        "api",
+        "fetch",
+        "backend",
+        "productservice",
+        "cartservice",
+        "checkoutservice",
+        "userservice"
+      ]
     }
   ],
   "reference": [
