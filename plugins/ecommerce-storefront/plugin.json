@@ -79,6 +79,14 @@
       "priority": 9,
       "tags": ["prompt", "compression", "tokens", "efficiency", "caveman"],
       "triggers": ["prompt", "understand", "process", "instruction", "caveman", "compress"]
+    },
+    {
+      "id": "structured-reasoning",
+      "file": "skills/10-structured-reasoning.md",
+      "description": "Enforce structured reasoning: THINK -> PLAN -> EXECUTE -> REVIEW before generating code",
+      "priority": 10,
+      "tags": ["reasoning", "senior", "structure", "plan", "review"],
+      "triggers": ["reason", "think", "plan", "execute", "review", "senior", "engineer"]
     }
   ],
   "reference": [
